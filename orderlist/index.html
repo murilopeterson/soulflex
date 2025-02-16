@@ -4,9 +4,300 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Soulflex</title>
+
+    <style>
+        body{
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .list details{
+
+            transition: ease-in;
+            background-color: #e4eaef;
+            border-radius: 5px;
+        }
+
+        .list details em{
+            float: right;
+        }
+        .list summary{
+            
+            color: white;
+            padding: 10px;
+        }
+
+        .list summary.red{
+            background-color: #ecab80;
+        }
+        .list summary.yellow{
+            background-color: #c6ec80;
+        }
+        .list summary.green{
+            background-color: #80eccc;
+        }
+
+        .list article{
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
-    <form class=""></form>
+    <form class="">
+        <input type="number" name="osnumber" placeholder="N Pedido"><br>
+        <label for="entry">Lançamento: 
+            <input type="date" name="entry">
+        </label><br>
+        <input type="radio" id="d10" name="deadlineCountDays" value="10" checked>
+        <label for="d10">10 dias</label>
+        <input type="radio" id="d15" name="deadlineCountDays" value="15">
+        <label for="d15">15 dias</label><br>
+        <input type="submit" value="Salvar">
+    </form>
+
+    <div id="app">
+        <div id="list" class="list">
+            <details>test</details>
+        </div>
+        
+    </div>
+    <script>
+
+        class Database {
+            constructor(dbName) {
+                this.base = dbName
+                this.data = this.readAll()
+            }
+
+            create(data) {
+                this.data.push(data)
+                this.save()
+            }
+
+            readAll() {
+                return JSON.parse(localStorage.getItem(this.base)) ?? []
+            }
+
+            read(index) {
+                return this.data[index]
+            }
+
+            update(index, data) {
+                this.data[index] = data
+                this.save()
+            }
+
+            delete(index) {
+                this.data.splice(index)
+                this.save()
+            }
+
+            deleteAll() {
+
+            }
+
+            export () {
+
+            }
+
+            save() {
+                localStorage.setItem(this.base, JSON.stringify(this.data))
+                this.data = this.readAll()
+            }
+
+            sortBy(key) {
+                return this.data.sort((a, b) => (
+                    a[key]?.trim().toLowerCase() || '').localeCompare(
+                        b[key]?.trim().toLowerCase() || ''))
+            }
+
+            filterBy(key, value) {
+                return this.data.filter(item => item[key]?.toLowerCase().includes(value.toLowerCase()));
+            }
+
+            where(param) {
+
+            }
+
+        }
+
+        class Holidays{
+            constructor(){
+
+            }
+            checkDeadline(entry, holidays = []) {
+                let workingDays = 0;
+                let deadline = new Date(entry);
+
+                while (workingDays < 10) {
+                    deadline.setDate(deadline.getDate() + 1);
+                    
+                    if (isWorkingDay(deadline, holidays)) {
+                        workingDays++;
+                    }
+                }
+
+                return deadline;
+            }
+
+            isWorkingDay(date, holidays) {
+                const weekday = date.getDay();
+                const formatedDate = date.toISOString().split('T')[0];
+                
+                return weekday !== 0 && weekday !== 6 && !holidays.includes(formatedDate);
+            }
+        }
+
+        class Order {
+            constructor(){
+
+            }
+        }
+
+        class AppForm{
+            constructor(){
+                let orderlist = new Database("OrdersList")
+                const list = document.getElementById("list")
+                this.data = orderlist.readAll()
+            }
+
+            checkDeadline(entry, holidays = [], deadlineCountDays) {
+                let workingDays = 0;
+                let deadline = new Date(entry);
+
+                while (workingDays < deadlineCountDays) {
+                    deadline.setDate(deadline.getDate()+1);
+                    
+                    if (this.isWorkingDay(deadline, holidays)) {
+                        workingDays++;
+                    }
+                }
+
+                return deadline;
+            }
+
+            isWorkingDay(date, holidays) {
+                const weekday = date.getDay();
+                const formatedDate = date.toISOString().slice(5, 10);
+
+                return weekday !== 0 && weekday !== 6 && !holidays.includes(formatedDate);
+            }
+
+            updateList(){
+                list.innerHTML = "";
+
+                let obj = []
+
+                Object.keys(this.data).forEach(element => {
+                    const holidays = [
+                        "01-01","03-04",
+                        "04-18","04-21",
+                        "05-01","05-24",
+                        "06-19","07-26",
+                        "09-07","10-12",
+                        "10-24","10-28",
+                        "11-02","11-15",
+                        "11-20","12-25"
+                    ]
+                    const entry = new Date(this.data[element].entry)
+                    const finalDeadline = this.checkDeadline(entry, holidays, this.data[element].deadlineCountDays);
+
+                    const diffInMs   = new Date(finalDeadline) - new Date()
+                    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+                    
+                    const weekdays = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado" ];
+
+                    const today = new Date(finalDeadline.toISOString().split('T')[0]); // Data atual
+                    const weekday = today.getDay();
+
+                    let obj1 = {
     
+                        'osnumber': this.data[element].osnumber,
+                        'entry': this.data[element].entry,
+                        'deadline': this.data[element].deadline,
+                        'dateLimit': finalDeadline.toLocaleDateString("pt-BR", { day: "numeric", month: "long" }).toUpperCase(),
+                        'finalCount': diffInDays,
+                        'weekday':weekdays[weekday]
+
+                    }
+
+                    obj.push(obj1)
+                    
+                })
+
+                obj.sort((a, b) => a.finalCount - b.finalCount);
+
+                Object.keys(obj).forEach(element => {
+
+                    let finalCount = Math.round(obj[element].finalCount)
+                    let summaryClass
+
+                    if(finalCount >= 1 && finalCount < 6 ){
+                        finalCount = " Faltam " + finalCount + " dias"
+                        summaryClass = "yellow";
+                    }
+                        
+                            
+                    else if(finalCount < 1){
+                        summaryClass = "red"
+                        finalCount = "Atrasado"
+                    }
+                        
+                    else
+                        summaryClass = "green"
+                    
+                    list.innerHTML += `
+                        <details>
+                            <summary class="${summaryClass}">
+                                <span>N: <b>${obj[element].osnumber}</b></span><em>${finalCount}</em></summary>
+                            <article>
+                                <header>
+                                    <h2>Cliente</h2>
+                                    <p>Data da venda: ${obj[element].entry}</p>
+                                    <p>Data prazo: ${obj[element].weekday}, ${obj[element].dateLimit}</p>
+                                </header>
+                                <section>
+                                    <h3>Itens:</h3>
+                                    <ul>
+                                        <li>Item 1 <span>qtd. 1</span></li>
+                                        <li>Item 2 <span>qtd. 1</span></li>
+                                        <li>Item 3 <span>qtd. 1</span></li>
+                                        <li>Item 4 <span>qtd. 1</span></li>
+                                        <li>Item 5 <span>qtd. 1</span></li>
+                                        <li>Item 6 <span>qtd. 1</span></li>
+                                    </ul>   
+                                </section>
+                                <footer></footer>
+                            </article>
+
+                        </details>
+                    `
+
+                })
+                
+            }
+            
+        }
+
+
+        const forms = document.querySelectorAll('form')
+
+        forms.forEach(form => {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault()
+
+                let entries     = new FormData(form)
+                entries         = Object.fromEntries(entries)
+
+
+                data = new Database("OrdersList")
+                data.create(entries)
+                
+                new AppForm().updateList()
+                form.reset()
+            })
+        })
+
+        new AppForm().updateList()
+
+    </script>
 </body>
 </html>
