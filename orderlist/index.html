@@ -6,54 +6,192 @@
     <title>Soulflex</title>
 
     <style>
+
+        *{box-sizing: border-box;}
+
         body{
             font-family: Arial, Helvetica, sans-serif;
+            background-color: #666;
         }
+
+        form.main{
+            position: fixed;
+            top: 0;
+            bottom:0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            width: 100vw;
+            height: 100vh;
+            background-color: #666;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        form.main.active{
+            display: flex !important;
+        }
+
+        form.main .container{
+            background-color: #333;
+            padding: 4rem 2rem;
+            color:#ccc
+
+        }
+
+        form.main input{
+            padding: .75rem 1rem ;
+        }
+        form.main input[type=text],form.main input[type=date],form.main input[type=number]{
+            width: 100%;
+            padding: .75rem 1rem ;
+            position: relative;
+        }
+
+        form.main label{
+            position: relative;
+        }
+
+        form.main label input[type=button]{
+            position: absolute;
+            right: 0;
+        }
+
+        form.main input[type=date]{
+            width: 100%;
+        }
+
+        form.main .container{
+            display: grid;
+            gap:1em
+        }
+
         .list details{
 
             transition: ease-in;
+            
             background-color: #e4eaef;
             border-radius: 5px;
+            overflow: hidden;
+            margin-block: 1rem;
+        }
+
+        .list details span{
+            margin-left: .75rem;
+            font-size: 1.2rem;
         }
 
         .list details em{
             float: right;
         }
+
+
         .list summary{
-            
-            color: white;
-            padding: 10px;
+            padding: 1rem;
+            background-color: #333;
         }
 
         .list summary.red{
-            background-color: #ecab80;
+            color: #ecab80;
         }
         .list summary.yellow{
-            background-color: #c6ec80;
+            color: #c6ec80;
         }
         .list summary.green{
-            background-color: #80eccc;
+            color: #80eccc;
         }
 
         .list article{
-            padding: 10px;
+            padding: 2rem;
+        }
+        .list article p{
+            margin-block: .5em;
+        }
+        .btns{
+
+            padding: 2rem;
+            z-index: 10;
+            border-radius: 0.5rem;
+        }
+        .act{
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            margin-bottom: 4rem;
+            margin-right: 4rem;
+            
+        }
+
+        .remove-btn{
+            margin-top: 1rem;
+            padding: .5rem 1rem;
+            border-radius: 0.25rem;
+        }
+        .autocomplete{
+            position: relative;
+        }
+        .autocomplete-items{
+            position: absolute;
+            background-color: #333;
+            z-index: 9999;
+            top:2.5rem;
+            left:0
+        }
+        .autocomplete-items div{
+            padding: 1em;
         }
     </style>
 </head>
 <body>
-    <form class="">
-        <input type="number" name="osnumber" placeholder="N Pedido"><br>
-        <label for="entry">Lançamento: 
-            <input type="date" name="entry">
-        </label><br>
-        <input type="radio" id="d10" name="deadlineCountDays" value="10" checked>
-        <label for="d10">10 dias</label>
-        <input type="radio" id="d15" name="deadlineCountDays" value="15">
-        <label for="d15">15 dias</label><br>
-        <input type="submit" value="Salvar">
+    <form id="mainForm" class="main">
+        <div class="container">
+            <label class="sect" for="customer">
+                <span>Cliente:</span>
+                <div class="autocomplete">
+                    <input id="customer" type="text" name="customer" placeholder="Cliente">
+                    <input type="button" value="x" onclick="clearInput('customer')">
+                </div>
+            </label>
+            <label class="sect">
+                <span>N Pedido:</span>
+                <div class="">
+                    <input id="osnumber" type="number" name="osnumber" placeholder="N Pedido">
+                    <input type="button" value="x" onclick="clearInput('osnumber')">
+                </div>
+                
+            </label>
+            <label class="sect" for="entry"><span>Lançamento:</span>
+                <div class="">
+                    <input type="date" name="entry">
+                </div>
+                
+            </label>
+
+            <div class="sect">
+                <span>Prazo:</span>
+                <input type="radio" id="d6" name="deadlineCountDays" value="6">
+                <label for="d6">6 dias</label>
+                <input type="radio" id="d8" name="deadlineCountDays" value="8" checked>
+                <label for="d8">8 dias</label>
+                <input type="radio" id="d12" name="deadlineCountDays" value="12">
+                <label for="d12">12 dias</label>
+            </div>
+            <br>
+            <div class="act">
+                <input type="button" class="btns"  onclick="toggleElement('mainForm')" value="Cancelar">
+                <input class="btns" type="submit" value="Salvar">
+            </div>
+            
+        </div>
     </form>
+    <div class="act">
+        <input id="" type="button" class="btns left"  onclick="" value="Imprimir">
+        <input id="" type="button" class="btns"  onclick="toggleElement('mainForm')" value="+">
+    </div>
+    
 
     <div id="app">
+        
         <div id="list" class="list">
             <details>test</details>
         </div>
@@ -119,75 +257,96 @@
 
         }
 
-        class Holidays{
-            constructor(){
-
+        class Autocomplete {
+            constructor(inputElement, suggestions) {
+                this.inputElement = inputElement;
+                this.suggestions = suggestions;
+                this.filteredSuggestions = [];
+                this.currentFocus = -1;
+            
+                // Eventos
+                this.inputElement.addEventListener("input", () => this.onInput());
+                this.inputElement.addEventListener("keydown", (e) => this.onKeyDown(e));
             }
-            checkDeadline(entry, holidays = []) {
-                let workingDays = 0;
-                let deadline = new Date(entry);
-
-                while (workingDays < 10) {
-                    deadline.setDate(deadline.getDate() + 1);
-                    
-                    if (isWorkingDay(deadline, holidays)) {
-                        workingDays++;
+        
+            onInput() {
+                const inputValue = this.inputElement.value;
+                this.filteredSuggestions = this.suggestions.filter(suggestion =>
+                    suggestion.toLowerCase().startsWith(inputValue.toLowerCase())
+                );
+                if(inputValue!="")
+                    this.showSuggestions();
+                else
+                    this.clearSuggestions();
+            }
+        
+            showSuggestions() {
+                
+                this.clearSuggestions();
+            
+                const suggestionsContainer = document.createElement("div");
+                suggestionsContainer.setAttribute("class", "autocomplete-items");
+                this.inputElement.parentNode.appendChild(suggestionsContainer);
+            
+                this.filteredSuggestions.forEach((suggestion, index) => {
+                    const suggestionItem = document.createElement("div");
+                    suggestionItem.innerHTML = `<strong>${suggestion.substr(0, this.inputElement.value.length)}</strong>${suggestion.substr(this.inputElement.value.length)}`;
+                    suggestionItem.addEventListener("click", () => {
+                        this.inputElement.value = suggestion;
+                        this.clearSuggestions();
+                    });
+                    suggestionsContainer.appendChild(suggestionItem);
+                });
+            }
+        
+            clearSuggestions() {
+                const items = document.querySelectorAll(".autocomplete-items");
+                items.forEach(item => item.remove());
+            }
+        
+            onKeyDown(e) {
+                const items = document.querySelectorAll(".autocomplete-items div");
+                if (e.keyCode === 40) { // tecla para baixo
+                    this.currentFocus++;
+                    this.addActive(items);
+                } else if (e.keyCode === 38) { // tecla para cima
+                    this.currentFocus--;
+                    this.addActive(items);
+                } else if (e.keyCode === 13) { // tecla Enter
+                    e.preventDefault();
+                    if (this.currentFocus > -1 && items[this.currentFocus]) {
+                    items[this.currentFocus].click();
                     }
                 }
-
-                return deadline;
             }
-
-            isWorkingDay(date, holidays) {
-                const weekday = date.getDay();
-                const formatedDate = date.toISOString().split('T')[0];
-                
-                return weekday !== 0 && weekday !== 6 && !holidays.includes(formatedDate);
+        
+            addActive(items) {
+                if (!items) return;
+                this.removeActive(items);
+                if (this.currentFocus >= items.length) this.currentFocus = 0;
+                if (this.currentFocus < 0) this.currentFocus = items.length - 1;
+                items[this.currentFocus].classList.add("autocomplete-active");
             }
-        }
-
-        class Order {
-            constructor(){
-
+            
+            removeActive(items) {
+                items.forEach(item => item.classList.remove("autocomplete-active"));
             }
         }
+
+        const input = document.getElementById("customer");
+
+        const suggestions = [ "Alvorada", "Araújo", "Armazém", "Atual", "Bellus", "Casa Cris", "Casa Nova", "Castro", "Cenário", "Chimango", "Brasil", "Colchões e Complementos", "Martins", "Confortt", "Durma Bem", "Mangalô", "Estação Centro", "T-63", "FA", "Buriti", "Home", "IG", "Imperador", "Kasa", "Itaberai", "King", "L&G", "Lema", "Lih", "Lua Nova", "Outlet", "Paraiso", "Perfect Night", "Pioneira", "Pousare", "Quero Quero", "R2", "Real", "Realeza", "Rezende", "Calaça", "Sawama", "Sleep Love", "Sonhar", "Bolimar", "Sonhare", "MR", "RA", "FA", "Viva", "Vuler", "Viva", "Telma" ];
+
+        new Autocomplete(input, suggestions);
 
         class AppForm{
             constructor(){
-                let orderlist = new Database("OrdersList")
-                const list = document.getElementById("list")
+
+                const orderlist = new Database("OrdersList")
                 this.data = orderlist.readAll()
-            }
 
-            checkDeadline(entry, holidays = [], deadlineCountDays) {
-                let workingDays = 0;
-                let deadline = new Date(entry);
-
-                while (workingDays < deadlineCountDays) {
-                    deadline.setDate(deadline.getDate()+1);
-                    
-                    if (this.isWorkingDay(deadline, holidays)) {
-                        workingDays++;
-                    }
-                }
-
-                return deadline;
-            }
-
-            isWorkingDay(date, holidays) {
-                const weekday = date.getDay();
-                const formatedDate = date.toISOString().slice(5, 10);
-
-                return weekday !== 0 && weekday !== 6 && !holidays.includes(formatedDate);
-            }
-
-            updateList(){
-                list.innerHTML = "";
-
-                let obj = []
-
-                Object.keys(this.data).forEach(element => {
-                    const holidays = [
+                const list = document.getElementById("list")
+                this.holidays = [
                         "01-01","03-04",
                         "04-18","04-21",
                         "05-01","05-24",
@@ -197,25 +356,62 @@
                         "11-02","11-15",
                         "11-20","12-25"
                     ]
-                    const entry = new Date(this.data[element].entry)
-                    const finalDeadline = this.checkDeadline(entry, holidays, this.data[element].deadlineCountDays);
+            }
+
+            checkDeadline(entry, deadlineCountDays) {
+                let workingDays = 0;
+                let deadline = new Date(entry);
+
+                while (workingDays < deadlineCountDays) {
+                    deadline.setDate(deadline.getDate() + 1);
+                    
+                    if (this.isWorkingDay(deadline, this.holidays)) {
+                        workingDays++;
+                    }
+                }
+
+                return deadline;
+            }
+
+            isWorkingDay(date) {
+                const weekday = date.getDay();
+                const formatedDate = date.toISOString().slice(5, 10);
+
+                return weekday !== 0 && weekday !== 6 && !this.holidays.includes(formatedDate);
+            }
+
+            updateList(){
+                list.innerHTML = "";
+
+                let obj = []
+
+                Object.keys(this.data).forEach(element => {
+
+                    const elem = this.data[element]
+                    const entry = new Date(elem.entry)
+
+                    console.log(elem.entry)
+
+                    
+                    const finalDeadline = this.checkDeadline(elem.entry, elem.deadlineCountDays);
 
                     const diffInMs   = new Date(finalDeadline) - new Date()
-                    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+                    const diffInDays = diffInMs / (1000 * 60 * 60 * 24)
                     
-                    const weekdays = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado" ];
+                    const weekdays = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado" ]
+                    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 
-                    const today = new Date(finalDeadline.toISOString().split('T')[0]); // Data atual
-                    const weekday = today.getDay();
+                    const today = new Date(finalDeadline.toISOString().split('T')[0])
+                    const weekday = today.getDay()
 
                     let obj1 = {
     
-                        'osnumber': this.data[element].osnumber,
-                        'entry': this.data[element].entry,
-                        'deadline': this.data[element].deadline,
-                        'dateLimit': finalDeadline.toLocaleDateString("pt-BR", { day: "numeric", month: "long" }).toUpperCase(),
-                        'finalCount': diffInDays,
-                        'weekday':weekdays[weekday]
+                        'osnumber':     elem.osnumber,
+                        'entry':        `${entry.getDate()+1} de ${months[entry.getMonth()]}`,
+                        'customer':     elem.customer,
+                        'dateLimit':    `${finalDeadline.getDate()} de ${months[finalDeadline.getMonth()]}`,
+                        'finalCount':   diffInDays,
+                        'weekday':      weekdays[weekday]
 
                     }
 
@@ -228,29 +424,25 @@
                 Object.keys(obj).forEach(element => {
 
                     let finalCount = Math.round(obj[element].finalCount)
-                    let summaryClass
-
-                    if(finalCount >= 1 && finalCount < 6 ){
-                        finalCount = " Faltam " + finalCount + " dias"
-                        summaryClass = "yellow";
-                    }
-                        
-                            
-                    else if(finalCount < 1){
-                        summaryClass = "red"
-                        finalCount = "Atrasado"
-                    }
-                        
-                    else
-                        summaryClass = "green"
                     
+                    let summaryClass = finalCount <= 1 ? "red" : (finalCount >= 6 ? "green" : "yellow" )
+
+                    if(finalCount >= 1 && finalCount < 6 )
+                        finalCount = "Restam " + finalCount + " dia(s)"
+         
+                    else if(finalCount < 1)
+                        finalCount = "Atrasado"
+
+                    else
+                        finalCount = ""
+
                     list.innerHTML += `
                         <details>
                             <summary class="${summaryClass}">
-                                <span>N: <b>${obj[element].osnumber}</b></span><em>${finalCount}</em></summary>
+                                <span><b>${obj[element].osnumber}</b></span><em>${finalCount}</em></summary>
                             <article>
                                 <header>
-                                    <h2>Cliente</h2>
+                                    <h2>${obj[element].customer}</h2>
                                     <p>Data da venda: ${obj[element].entry}</p>
                                     <p>Data prazo: ${obj[element].weekday}, ${obj[element].dateLimit}</p>
                                 </header>
@@ -265,7 +457,9 @@
                                         <li>Item 6 <span>qtd. 1</span></li>
                                     </ul>   
                                 </section>
-                                <footer></footer>
+                                <footer>
+                                    <input type="button" class="remove-btn" onclick="removeElement(${element})" value="Remover" />
+                                </footer>
                             </article>
 
                         </details>
@@ -293,10 +487,28 @@
                 
                 new AppForm().updateList()
                 form.reset()
+                toggleElement('mainForm')
             })
         })
 
         new AppForm().updateList()
+
+        function clearInput(input){
+            const items = document.querySelectorAll(".autocomplete-items");
+            items.forEach(item => item.remove());
+            return document.getElementById(input).value = ""
+        }
+
+        function toggleElement(id){
+            const element = document.getElementById(id)
+            element.classList.toggle("active")
+        }
+
+        function removeElement(id){
+            const data = new Database("OrdersList")
+            data.delete(id)
+            new AppForm().updateList()
+        }
 
     </script>
 </body>
