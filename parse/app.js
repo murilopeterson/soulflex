@@ -173,10 +173,10 @@ var arrayUnico = []
 
       data.forEach((order, index) => {
         html += `
-          <div class="pedido-section">
+          <label class="pedido-section" for="order-${order.item.pedido}">
             <div class="checkbox-container">
               <input type="checkbox" id="order-${order.item.pedido}" value="${order.item.pedido}">
-              <label for="order-${order.item.pedido}"><strong>${order.item.pedido} - ${order.item.cliente}</strong> <small>${order.item.data_venda}</small></label>
+              <label ><strong>${order.item.pedido} - ${order.item.cliente}</strong> <small>${order.item.data_venda}</small></label>
             </div>
             <div>
         `;
@@ -189,7 +189,7 @@ var arrayUnico = []
         
         html += `
               </div>
-          </div>
+          </label>
         `;
       });
 
@@ -213,3 +213,11 @@ var arrayUnico = []
 
 
 
+function toggleCheckboxes() {
+            // Seleciona todos os checkboxes da página
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            // Inverte o estado de cada checkbox
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = !checkbox.checked;
+            });
+        }
