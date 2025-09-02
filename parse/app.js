@@ -5,6 +5,7 @@
     var i = document.getElementById('file');
     var table = document.getElementById('table');
 let  objeto = [];
+var arrayUnico = []
 
     i.addEventListener('change', function () {
         if (!!i.files && i.files.length > 0) {
@@ -51,6 +52,8 @@ let  objeto = [];
 
             if( cols.length)
                 pedidos.push(cols)
+
+            /* console.log(pedidos) */
         });
 
         var content = [pedidos.splice(0,3), pedidos]
@@ -61,7 +64,11 @@ let  objeto = [];
         
 
         content[1].forEach(linha => {
-
+         /*  if (linha[0].includes("PEDIDO")) {
+            console.log(linha)
+          } */
+          
+          if(true){
             
             if (linha[0].includes("Pedido")) {
                 
@@ -102,7 +109,7 @@ let  objeto = [];
                 
             }
             else{
-
+              
                 function parseBoxString(str) {
                 // Normalizar a string, removendo espaços extras
                 const normalizedStr = str.replace(/\s+/g, ' ').trim();
@@ -120,7 +127,7 @@ let  objeto = [];
 
                 // Material: tudo após as dimensões
                 const material = dimensionMatch ? normalizedStr.slice(dimensionIndex + dimensionMatch[0].length).trim() || "N/A" : "N/A";
-
+                  
                 return {
                 id: linha[0].trim(),
                 model: type,
@@ -134,17 +141,17 @@ let  objeto = [];
                 const result = parseBoxString(linha[1]);
 
                 if (currentItem) {
+                    
+                    
                     currentItem.subitems.push(result);
+                    
                 }
             }
-            objeto.sort((a, b) => {
-                const clienteA = a.item.cliente.toLowerCase();
-                const clienteB = b.item.cliente.toLowerCase();
-                return clienteA.localeCompare(clienteB);
-            });
-            renderOrders(objeto);    
-    });
-            
+          }   
+        });
+
+        renderOrders(objeto);
+
       
     }
  // Função para ordenar pedidos por cliente
@@ -159,6 +166,7 @@ let  objeto = [];
     function renderOrders(data) {
       // Ordenar antes de renderizar
       sortOrdersByCliente(data);
+      //arrayUnico.push[currentItem.subitems]
       
       const container = document.getElementById('orders-container');
       let html = '';
@@ -170,32 +178,17 @@ let  objeto = [];
               <input type="checkbox" id="order-${order.item.pedido}" value="${order.item.pedido}">
               <label for="order-${order.item.pedido}"><strong>${order.item.pedido} - ${order.item.cliente}</strong> <small>${order.item.data_venda}</small></label>
             </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Quantidade</th>
-                  <th>Modelo</th>
-                  <th>Tamanho</th>
-                  <th>Tecido/Material</th>
-                </tr>
-              </thead>
-              <tbody>
+            <div>
         `;
         
         order.subitems.forEach(subitem => {
           html += `
-            <tr>
-              <td>${subitem.qtd}</td>
-              <td>${subitem.model}</td>
-              <td>${subitem.size}</td>
-              <td>${subitem.cloth}</td>
-            </tr>
+              <p><strong>${subitem.qtd} . </strong> ${subitem.model} <strong>${subitem.size}</strong> - ${subitem.cloth}</p>
           `;
         });
         
         html += `
-              </tbody>
-            </table>
+              </div>
           </div>
         `;
       });

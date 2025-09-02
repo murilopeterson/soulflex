@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSV</title>
     <link rel="stylesheet" href="style.css">
-<style>
+    <style>
     body {
       font-family: Arial, sans-serif;
-      font-size: 14px;
-      margin: 20px;
+      font-size: 8pt;
+      line-height: .75em;
     }
+    p{margin-left: 40px;}
     .pedido-section {
-      margin-bottom: 10px;
-      border: 1px solid #ddd;
-      padding: 5px;
+      margin-bottom: 1px;
+      /* border: 1px solid #ddd; */
+      padding: 1px;
       border-radius: 5px;
     }
     table {
@@ -32,6 +33,9 @@
     }
     .order-info p {
       margin: 5px 0;
+    }
+@media print {
+        .button{ display: none;}
     }
     .button{
         margin-bottom: 20px;
@@ -54,14 +58,14 @@
     .checkbox-container {
       margin-bottom: 5px;
     }
-  </style>
+    </style>
 </head>
 <body>
   
   <div id="orders-container"></div>
 
     <input class="button" type="file" id="file"><button class="delete-button button" onclick="deleteSelectedOrders()">Deletar Pedidos Selecionados</button>
-    <table id="table"></table>
+
     <script src="app.js"></script>
 </body>
 </html>
