@@ -33,7 +33,7 @@ var arrayUnico = []
 
         var rows = text.split(NEWLINE);
 
-        var pedidos = []
+        var content = []
         
 
         rows.forEach(function (r) {
@@ -51,25 +51,52 @@ var arrayUnico = []
             })
 
             if( cols.length)
-                pedidos.push(cols)
+                content.push(cols)
 
             /* console.log(pedidos) */
         });
 
-        var content = [pedidos.splice(0,3), pedidos]
 
         var result = [];
-
+        result = { header: content.splice(0,3), table: content }
         let currentItem = null;
-        
 
-        content[1].forEach(linha => {
-         /*  if (linha[0].includes("PEDIDO")) {
-            console.log(linha)
-          } */
+        if (result.header[1][0].includes("RELAÇÃO")){
+          const pRelation = []
+          const items = []
+          const obs = []
+
+          result.table.forEach(row => {
+              if (row[0].includes("PEDIDO")) {
+                  if(row[1].replace('Obs: ', '').trim() !== '')
+                  obs.push(row)
+              }
+              else{
+                  items.push(row)
+              }
+        })
+
+        const uniques = [];
+        const descricoesVistas = new Set();
+
+        for (const [id, descricao] of items) {
+            if (!descricoesVistas.has(descricao)) {
+                descricoesVistas.add(descricao);
+                if(descricao)
+                    uniques.push(descricao.trim());
+            }
+        }
+        render(obs)
+        
+    }
+    if (result.header[1][0].includes("Relatório")){
+
+
+      result.table.forEach(linha => {
+
           
-          if(true){
-            
+          
+            console.log(linha)
             if (linha[0].includes("Pedido")) {
                 
                 const str = linha[0]
@@ -111,33 +138,32 @@ var arrayUnico = []
             else{
               
                 function parseBoxString(str) {
-                // Normalizar a string, removendo espaços extras
-                const normalizedStr = str.replace(/\s+/g, ' ').trim();
+                  // Normalizar a string, removendo espaços extras
+                  const normalizedStr = str.replace(/\s+/g, ' ').trim();
 
-                // Expressão regular para dimensões (captura com ou sem espaço antes da altura)
-                const dimensionRegex = /\d+[xX]\d+(?:\s*[xX]\d+)?/;
-                const dimensionMatch = normalizedStr.match(dimensionRegex);
-                let dimensions = dimensionMatch ? dimensionMatch[0].replace(/\s*([xX])\s*/g, '$1').toUpperCase() : "";
+                  // Expressão regular para dimensões (captura com ou sem espaço antes da altura)
+                  const dimensionRegex = /\d+[xX]\d+(?:\s*[xX]\d+)?/;
+                  const dimensionMatch = normalizedStr.match(dimensionRegex);
+                  let dimensions = dimensionMatch ? dimensionMatch[0].replace(/\s*([xX])\s*/g, '$1').toUpperCase() : "";
 
-                // Encontrar o índice das dimensões
-                const dimensionIndex = dimensionMatch ? normalizedStr.indexOf(dimensionMatch[0]) : normalizedStr.length;
+                  // Encontrar o índice das dimensões
+                  const dimensionIndex = dimensionMatch ? normalizedStr.indexOf(dimensionMatch[0]) : normalizedStr.length;
 
-                // Type: tudo antes das dimensões
-                var type = normalizedStr.slice(0, dimensionIndex).trim().replace("BOX", '').replace("GRAN", '').replace(/\s+/g, ' ').trim() || "BOX";
+                  // Type: tudo antes das dimensões
+                  var type = normalizedStr.slice(0, dimensionIndex).trim().replace("BOX", '').replace("GRAN", '').replace(/\s+/g, ' ').trim() || "BOX";
 
-                // Material: tudo após as dimensões
-                const material = dimensionMatch ? normalizedStr.slice(dimensionIndex + dimensionMatch[0].length).trim() || "N/A" : "N/A";
-                  
-                return {
-                id: linha[0].trim(),
-                model: type,
-                size: dimensions || "N/A",
-                cloth: material,
-                qtd: linha[2].trim()
-                };
-}
+                  // Material: tudo após as dimensões
+                  const material = dimensionMatch ? normalizedStr.slice(dimensionIndex + dimensionMatch[0].length).trim() || "N/A" : "N/A";
+                    
+                  return {
+                  id: linha[0].trim(),
+                  model: type,
+                  size: dimensions || "N/A",
+                  cloth: material,
+                  qtd: linha[2].trim()
+                  };
+                }
 
-// Processar todas as strings
                 const result = parseBoxString(linha[1]);
 
                 if (currentItem) {
@@ -147,10 +173,15 @@ var arrayUnico = []
                     
                 }
             }
-          }   
+            
+            
         });
 
+        
+
         renderOrders(objeto);
+    }
+        
 
       
     }
@@ -221,3 +252,37 @@ function toggleCheckboxes() {
                 checkbox.checked = !checkbox.checked;
             });
         }
+
+
+
+function render(data){
+    const container = document.getElementById('orders-container');
+    let html = '';
+    console.log(data)
+    data.forEach((order) => {
+
+        html += `
+          <h3>${order[0]}</h3>
+        `;
+
+        for (const item of order) {
+            if (!item.includes("PEDIDO")) {
+                html += `
+                    <p>${item}</p>
+                `;
+            }
+        }
+        
+        /* order.subitems.forEach(subitem => {
+          html += `
+              <p><strong>${subitem.qtd} . </strong> ${subitem.model} <strong>${subitem.size}</strong> - ${subitem.cloth}</p>
+          `;
+        }); */
+/*         
+        html += `
+              
+        `; */
+      });
+      //console.log(html)
+      container.innerHTML = html;
+}
