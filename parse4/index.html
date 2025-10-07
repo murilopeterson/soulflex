@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <title>Parse 4</title>
+
+    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous"> -->
+
+    <link rel="stylesheet" href="style.css">
+    <style>
+
+@media print {
+  input[type="checkbox"]{
+      display: none;
+    }
+        .button{ display: none;}
+    }
+    .button{
+        margin-bottom: 20px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .delete-button {
+
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .delete-button:hover {
+      background-color: #cc0000;
+    }
+    .checkbox-container {
+      margin-bottom: 5px;
+      position: relative;
+    }
+    input[type="checkbox"]{
+      position: absolute;
+      top: 1em;
+    }
+    </style>
+</head>
+<body>
+
+  <form id="mainForm" class="main">
+    <div class="container">
+      <label class="sect" for="customer">
+          <span>Cliente:</span>
+          <div class="autocomplete">
+              <input id="customer" type="text" name="customer" placeholder="Cliente">
+              <input type="button" value="x" onclick="clearInput('customer')">
+          </div>
+      </label>
+      <label class="sect">
+          <span>N Pedido:</span>
+          <div class="">
+              <input id="osnumber" type="number" name="osnumber" placeholder="N Pedido">
+              <input type="button" value="x" onclick="clearInput('osnumber')">
+          </div>
+          
+      </label>
+      <label class="sect" for="entry"><span>Lançamento:</span>
+          <div class="">
+              <input type="date" name="entry">
+          </div>
+          
+      </label>
+
+      <div class="sect">
+          <span>Prazo:</span>
+          <input type="radio" id="d8" name="deadlineCountDays" value="8" checked>
+          <label for="d8">8 dias</label>
+          <input type="radio" id="d15" name="deadlineCountDays" value="15">
+          <label for="d15">15 dias</label>
+      </div>
+      <br>
+      <div class="act">
+          <input type="button" class="btns"  onclick="toggleElement('mainForm')" value="Cancelar">
+          <input class="btns" type="submit" value="Salvar">
+      </div>
+      
+    </div>
+  </form>
+
+    <div class="act">
+      <input id="" type="button" class="btns left"  onclick="" value="Imprimir">
+      <input id="file" type="file" class="btns " accept=".xls" title="Import XLS" value="Import XLS">
+      <input id="" type="button" class="btns" value="Inverter Checkboxes" class="button" onclick="toggleCheckboxes()">
+      <input id="" type="button" class="btns" value="Deletar Pedidos Selecionados" class="button" onclick="deleteSelectedOrders()">
+      <input id="" type="button" class="btns"  onclick="toggleElement('mainForm')" value="+">
+    </div>
+    
+
+    <div id="app">
+      <div id="list" class="list">
+        <details>test</details>
+      </div>
+    </div>
+
+
+    <!-- <div class="nav">
+      <button onclick="render(_clients)">Clientes</button>
+      <button onclick="render(_models)">Modelos</button>
+      <button onclick="render(_clothes)">Tecidos</button>
+      <button onclick="console.log(_boxes)">Caixas</button>
+    </div>
+    <div id="app"></div>
+    <label for="file">
+        
+    </label> -->
+
+    
+
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script> -->
+
+    <script src="database.js"></script>
+    <script src="script.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 8pt;
+      line-height: .75em;
+    }
+    p{margin-left: 40px;}
+    .pedido-section {
+      margin-bottom: 1px;
+      /* border: 1px solid #ddd; */
+      padding: 1px;
+      border-radius: 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 5px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 2px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .order-info p {
+      margin: 5px 0;
+    }
+@media print {
+  input[type="checkbox"]{
+      display: none;
+    }
+        .button{ display: none;}
+    }
+    .button{
+        margin-bottom: 20px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .delete-button {
+
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .delete-button:hover {
+      background-color: #cc0000;
+    }
+    .checkbox-container {
+      margin-bottom: 5px;
+      position: relative;
+    }
+    input[type="checkbox"]{
+      position: absolute;
+      top: 1em;
+    }
+    </style>
+</head>
+<body>
+  
+  <div id="orders-container"></div>
+
+    <input class="button" type="file" id="file"><button class="button" onclick="toggleCheckboxes()">Inverter Checkboxes</button><button class="delete-button button" onclick="deleteSelectedOrders()">Deletar Pedidos Selecionados</button>
+
+    <script src="app.js"></script>
+</body>
+</html>

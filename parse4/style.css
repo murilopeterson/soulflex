@@ -1,0 +1,137 @@
+
+        *{box-sizing: border-box;}
+
+        body{
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #666;
+        }
+
+        form.main{
+            position: fixed;
+            top: 0;
+            bottom:0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            width: 100vw;
+            height: 100vh;
+            background-color: #666;
+            display: none;
+            justify-content: center;
+            align-items: center;
+
+        }
+        form.main.active{
+            display: flex !important;
+        }
+
+        form.main .container{
+            background-color: #333;
+            padding: 4rem 2rem;
+            color:#ccc;
+            margin-top: -5rem;
+            
+
+        }
+
+        form.main input{
+            padding: .75rem 1rem ;
+        }
+        form.main input[type=text],form.main input[type=date],form.main input[type=number]{
+            width: 100%;
+            padding: .75rem 1rem ;
+            position: relative;
+        }
+
+        form.main label{
+            position: relative;
+        }
+
+        form.main label input[type=button]{
+            position: absolute;
+            right: 0;
+        }
+
+        form.main input[type=date]{
+            width: 100%;
+        }
+
+        form.main .container{
+            display: grid;
+            gap:1em
+        }
+
+        .list details{
+
+            transition: ease-in;
+            
+            background-color: #e4eaef;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-block: 1rem;
+        }
+
+        .list details span{
+            margin-left: .75rem;
+            font-size: 1.2rem;
+        }
+
+        .list details em{
+            float: right;
+        }
+
+
+        .list summary{
+            padding: 1rem;
+            background-color: #333;
+        }
+
+        .list summary.red{
+            color: #ecab80;
+        }
+        .list summary.yellow{
+            color: #c6ec80;
+        }
+        .list summary.green{
+            color: #80eccc;
+        }
+
+        .list article{
+            padding: 2rem;
+        }
+        .list article p{
+            margin-block: .5em;
+        }
+        .btns{
+
+            padding: 2rem;
+            z-index: 10;
+            border-radius: 0.5rem;
+        }
+        .act{
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            margin-bottom: 4rem;
+            margin-right: 4rem;
+            
+        }
+
+        .remove-btn{
+            margin-top: 1rem;
+            padding: .5rem 1rem;
+            border-radius: 0.25rem;
+        }
+        .autocomplete{
+            position: relative;
+        }
+        .autocomplete-items{
+            position: absolute;
+            background-color: #333;
+            z-index: 9999;
+            top:2.5rem;
+            left:0
+        }
+        .autocomplete-items div{
+            padding: 1em;
+        }
