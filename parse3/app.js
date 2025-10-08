@@ -324,7 +324,7 @@ function render(data){
                     ${order.obs ? "<p><strong>Obs</strong>: "+ order.obs + "</p>" : ""}
                     <p>
                         <small class="order-details details"> 
-                            ${qtys + " cama "}
+                            ${qtys} ${(qtys > 1) ? "camas ":"cama"} 
                             ${parts ? parts + " peça " : ""}
                             ${headboards ? headboards + " cabeceira " : ""}
                             ${lids ? lids + " tampa" : ""}

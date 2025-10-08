@@ -4,9 +4,154 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parse 6</title>
+    <style>
+        .tab-panel {
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+    </style>
 </head>
 <body>
+
+    <input id="file" type="file" class="btns " accept=".xls" title="Import XLS" value="Import XLS">
+    <br/><p></p>
+    <form id="customer" name="customer" class="multistep">
+        <div id="Dados Cliente" class="tab-panel active">
+            <input type="hidden" name="id" id="id" placeholder="">
+            <label for="customer">Loja:
+                <input type="text" name="customer" id="customer" placeholder="">
+            </label><br/>
+            <label for="owner">Proprietário:
+                <input type="text" name="owner" id="owner" placeholder="">
+            </label><br/>
+            <label for="address">Endereço:
+                <input type="text" name="address" id="address" placeholder="">
+            </label><br/>
+            <label for="obs">Observações:
+                <input type="text" name="obs" id="obs" placeholder="Cliente">
+            </label><br/>
+        </div>
+        <div id="Produto" class="tab-panel">Passo 2</div>
+        <div id="Dimensões" class="tab-panel">Passo 3</div>
+        <div id="Tecido" class="tab-panel">Passo 4</div>
+        <div id="Acessórios" class="tab-panel">Passo 5</div>
+        <div id="Produçao" class="tab-panel">Passo 6</div>
+        <div id="Outros" class="tab-panel">Passo 7</div>
+        
+        <div id="act-btns">
+            <button type="button" class="act-btn act-nav" data-action="prev">Voltar</button>
+            <button type="button" class="act-btn act-nav" data-action="next">Avançar</button>
+            <button type="submit" class="act-btn" data-action="save">Salvar</button>
+            <button type="submit" class="act-btn" data-action="copy">Duplicar</button>
+            <button type="button" class="act-btn" data-action="close">Fechar</button>
+        </div>        
+    </form>
+
+    <div id="app-render"></div>
     
     <script src="app.js"></script>
+    <script>
+        const customer = document.getElementById("customer")
+
+        let _edit = false
+        const dbstorage = "db_client_test"
+
+        const getLocalStorage = () => JSON.parse(localStorage.getItem(dbstorage)) ?? []
+
+        const setLocalStorage = (storage) => {
+            localStorage.setItem(dbstorage, JSON.stringify(storage))
+            _edit = false
+            render()
+        }
+
+        const create = (item) => {
+            const data = getLocalStorage()
+            data.push(item)
+            setLocalStorage(data)
+        }
+
+        const read = (index) => {
+            const data = getLocalStorage()
+            return data[index]
+        }
+
+        const update = (index, newdata) => {
+            const data = getLocalStorage()
+            data[index] = newdata
+            setLocalStorage(data)
+        }
+
+        const remove = (index) => {
+            const data = getLocalStorage()
+            data.splice(index, 1)
+            setLocalStorage(data)
+        }
+
+        const edit = (index) => {
+            _edit = index
+            
+            const db = getLocalStorage()
+            var obj = Object.keys(db[0])
+            
+            obj.forEach(element => {         
+                if (customer[element])  
+                    customer[element].value = read(index)[element]
+            })
+        }
+
+        const formData = (e) => {
+            const data 		= new FormData(e.target);
+            return          Object.fromEntries(data.entries());
+        }
+
+        function isNumber(n) { return !isNaN(parseFloat(n)) && !isNaN(n - 0) }
+
+        const handleSubmit = (event) => {
+            event.preventDefault();
+            isNumber(_edit) ? update(_edit,formData(event)) : create(formData(event))
+        }
+
+        const render = () => {
+            document.getElementById("app-render").innerHTML = ""
+            const data = getLocalStorage()
+
+            //data[0] ? console.log(Object.keys(data[0])) : console.log("DB empty")
+            data.forEach(generateTable)
+
+            customer.reset()
+        }
+
+        const generateTable = (data, index) => {
+            const row = document.createElement('tr')
+            const td = document.createElement('td')
+
+            
+
+            obj = Object.keys(data)
+
+            td.innerHTML = ``
+
+            obj.forEach(element => {
+                td.innerHTML += `${data[element]} `
+            })
+            
+            td.innerHTML += `
+                    <input type='button' onClick="edit(${index})" value="Editar" />
+                    <input type='button' onClick="remove(${index})" value="Remover" />
+            `
+            row.appendChild(td)
+
+            document.getElementById("app-render").appendChild(row) 
+        }
+
+
+        render()
+        
+        //events
+        customer.addEventListener('submit', handleSubmit)
+
+    </script>
 </body>
 </html>

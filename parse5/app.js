@@ -151,7 +151,16 @@ class App{
 
         });
 
-        console.log(orders)
+        
+            const uniqueArray = Object.values(
+                CLIENTS.clients.reduce((acc, item) => {
+                    acc[item.customer] = item;
+                    return acc;
+                }, {})
+            );
+            console.log(this.list.data)
+        //localStorage.setItem("db_client_test", JSON.stringify(uniqueArray))
+        //localStorage.setItem("db_orders_test", JSON.stringify(this.list.data))
     }
 
 
@@ -180,6 +189,7 @@ class App{
         
         //this.render(CLIENTS.clients)
 
+        
         
 
     }
@@ -265,9 +275,9 @@ class Order{
         this.sale   = result[1]
         this.income = result[2]
         this.seller = result[3]
-        this.client = result[4]
+        this.client = CLIENTS.check(result[4])
 
-        CLIENTS.check(this.client)
+        //CLIENTS.check(this.client)
 
     }
 
@@ -407,8 +417,8 @@ class Client{
             legs = "MADEIRA 12 CM"
         }
 
-        const existingPair = this.clients.find(pair => pair[1] === client);
-    
+        const existingPair = this.clients.find(pair => pair.customer === client);
+        
         if (existingPair) {
             this.clientId = existingPair[0]
         } else {
@@ -419,7 +429,8 @@ class Client{
                 pes : { base: legs, diamante: diam }
         }
 
-            this.clients.push([this.nextId,client, legs,diam]);
+            //this.clients.push([this.nextId,client, legs,diam]);
+            this.clients.push({id:this.clientId, customer:client, legs: legs,diam:diam, obs: "", address:""});
             this.nextId++;
         }
 
