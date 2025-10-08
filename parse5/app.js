@@ -420,7 +420,7 @@ class Client{
         const existingPair = this.clients.find(pair => pair.customer === client);
         
         if (existingPair) {
-            this.clientId = existingPair[0]
+            this.clientId = existingPair.id
         } else {
             this.clientId = this.nextId
             const set = {
