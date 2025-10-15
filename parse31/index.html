@@ -83,8 +83,8 @@
       thead{ font-weight: bold;} td{min-width: 100px;}
       
       .page {
-          width: 210mm;
-          min-height: 297mm;
+          width: 100mm;
+          min-height: 50mm;
           padding: 10mm 7mm;
           margin: 10mm auto;
           border: 1px #D3D3D3 solid;
@@ -117,35 +117,59 @@
       }
       
       @page {
-              size: A4;
+              size: 100mm 50mm;
               margin: 0;
               padding: 0;
           }
 
       @media print {
-          html,
-          body {
-              width: 210mm;
-              height: 297mm;
-              padding: 0;
-              margin: 0;
-          }
-          .page {
-              margin: 0;
-              border: 0;
-              border-radius: initial;
-              width: initial;
-              min-height: initial;
-              box-shadow: initial;
-              background: initial;
-              page-break-after: always;
-          }
-          header, main, footer{display: none;}
+          @media print {
+    
+            @page {
+                size: 100mm 50mm;
+                margin: 0; 
+            }
+      
+      
+            body {
+                margin: 0;
+                padding: 2mm; 
+                width: 96mm;
+                height: 46mm;
+                box-sizing: border-box;
+                font-size: 10px;
+                page-break-after: always; 
+                overflow: hidden;
+            }
+      
+      
+            .no-print {
+                display: none !important;
+            }
+            
+      
+            .etiqueta {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                border: 1px solid #000; 
+                box-sizing: border-box;
+            }
+            
+            /* Evita quebra de página indesejada */
+            * {
+                page-break-inside: avoid;
+            }
+        }
       }
     </style>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app" class="no-print"></div>
     <label for="file" class="button"> Import XLS
         <input type="file" id="file" accept=".xls" onchange="">
     </label>
