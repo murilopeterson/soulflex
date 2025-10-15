@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Soulflex</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        html, body{ background-color: #eee; overflow-x: hidden; overflow-y: scroll;}
+        thead{ font-weight: bold;} td{min-width: 100px;}
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 10mm 7mm;
+            margin: 10mm auto;
+            border: 1px #D3D3D3 solid;
+            border-radius: 5px;
+            background: white;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tags {
+            height: 257mm;
+            /* outline: .5cm #FFEAEA solid; */
+            display: grid;
+            grid-template-columns: auto auto auto;
+            align-content: start;
+            justify-content: start;
+            
+        }
+        
+        .tag {
+            background-color: #ccc;
+            display: grid;
+            align-items: center;
+            justify-content: center;
+            height: 26mm;
+            width: 64.5mm;
+        }
+        .tag p{
+            padding: 0;
+            margin: 0;
+        }
+        
+        @page {
+                size: A4;
+                margin: 0;
+                padding: 0;
+            }
+
+        @media print {
+            html,
+            body {
+                width: 210mm;
+                height: 297mm;
+                padding: 0;
+                margin: 0;
+            }
+            .page {
+                margin: 0;
+                border: 0;
+                border-radius: initial;
+                width: initial;
+                min-height: initial;
+                box-shadow: initial;
+                background: initial;
+                page-break-after: always;
+            }
+            header, main, footer{display: none;}
+        }
+    </style>
+</head>
+
+<body>
+    
+    <header class="pb-5">
+        <button onclick="document.body.requestFullscreen()">Tela cheia</button>
+        <input type="number" name="qtags" id="qtags">
+        <button onclick="toPrint()">Imprimir</button>
+    </header>
+    <main>
+        <div class="container-fluid">
+            <form id="order" class="row" name="cadastropedido">
+                <div class="col-12">
+                    <!-- <label for="Cliente">Cliente:</label> -->
+                    <input class="form-control" name="Cliente" id="Cliente" list="clientList" placeholder="Cliente">
+                    <datalist id="clientList">
+                        <select>
+                            <option label="Atual" value="Atual">
+                            <option label="Realeza" value="Realeza">
+                            <option label="IG" value="IG">
+                            <option label="Feirão Buriti" value="Feirão Buriti">
+                            <option label="L&G Art" value="L&G Art">
+                            <option label="Lih" value="Lih">
+                            <option label="Casa dos colchões" value="Casa dos colchões">
+                        </select>
+                    </datalist>
+        
+                </div>
+                <div class="col-12 p-3">
+                    <!-- <div class="form-check form-switch align-self-center col-6">
+                        <input type="hidden" name="Vem buscar" value="Não" >
+                        <input class="form-check-input" type="checkbox" id="Buscar">
+                        <label class="form-check-label text-nowrap" for="Buscar">Vem buscar</label>
+                    </div> -->
+                    <div class="btn-group-sm">
+                        <input type="hidden" name="Vem buscar" value="Não" >
+                        <input class="btn-check" type="checkbox" id="Buscar">
+                        <label class="btn btn-outline-primary d-inline" for="Buscar">Vem buscar</label>
+
+                        <input type="hidden" name="Prioridade" value="Não" >
+                        <input type="checkbox" class="btn-check" id="Prioridade" autocomplete="off">
+                        <label class="btn btn-outline-primary  d-inline" for="Prioridade">Prioridade</label>
+                    </div>
+                    
+                </div>
+                
+                <!-- <div class="d-flex">
+                    <div>
+                        <label for="Início" class="form-label">Início:</label>                
+                        <input class="form-control mb-2" type="date" name="Prazo">
+                    </div>
+                    <div>
+                        <label for="Término" class="form-label">Término:</label> 
+                        <input class="form-control" type="date" name="Término">
+                    </div>                    
+                </div> -->
+
+                <!-- <label for="" class="form-label">Categoria:</label> -->
+                <div class="btn-group-sm" role="group">
+                    <input type="radio" class="btn-check cat-base" onchange="checkThis('Gran');" value="Base" name="Categoria" id="Base" checked>
+                    <label class="btn btn-outline-primary" for="Base">Base</label>
+
+                    <input type="radio" class="btn-check cat-bau" onchange="checkThis('Gran');" value="Baú" name="Categoria" id="Baú">
+                    <label class="btn btn-outline-primary" for="Baú">Baú</label>
+
+                    <input type="radio" class="btn-check cat-bicama" onchange="checkThis('Aux 78');" value="Bicama" name="Categoria" id="Bicama">
+                    <label class="btn btn-outline-primary" for="Bicama">Bicama</label>
+
+                    <input type="radio" class="btn-check cat-especial" onchange="checkThis('Evolution');" value="Especial" name="Categoria" id="Especial">
+                    <label class="btn btn-outline-primary" for="Especial">Especial</label>
+
+                    <style>
+                        .tabpanel .mod {display: none;}
+                        .cat-base:checked ~ .tabpanel .mod-base{ display:block !important}
+                        .cat-bau:checked ~ .tabpanel .mod-bau{ display:block !important}
+                        .cat-bicama:checked ~ .tabpanel .mod-bicama{ display:block !important}
+                        .cat-especial:checked ~ .tabpanel .mod-especial{ display:block !important}
+                    </style>
+
+                    <div class="tabpanel">
+                        <label for="" class="form-label">Modelo:</label>
+                        <div class="btn-group-sm d-flex" role="group">
+                            <div class="btn-group-sm mod mod-base mod-bau me-1">
+                                <input type="radio" class="btn-check" value="Gran" name="Modelo" id="Gran" checked>
+                                <label class="btn btn-outline-primary" for="Gran">Gran</label>
+
+                                <input type="radio" class="btn-check" value="Soul" name="Modelo" id="Soul">
+                                <label class="btn btn-outline-primary" for="Soul">Soul</label>
+                            </div>
+                            <div class="btn-group-sm mod mod-bau">
+                                <input type="radio" class="btn-check" value="Partido" name="Modelo" id="Partido">
+                                <label class="btn btn-outline-primary" for="Partido">Bi-partido</label>
+
+                                <input type="radio" class="btn-check" value="Eletrônico" name="Modelo" id="Eletrônico">
+                                <label class="btn btn-outline-primary" for="Eletrônico">Eletrônico</label>
+
+                                <input type="radio" class="btn-check" value="Baú Bicama" name="Modelo" id="Baú Bicama">
+                                <label class="btn btn-outline-primary" for="Baú Bicama">Bicama</label>
+                            </div>
+
+                            <div class="btn-group-sm mod mod-bicama">
+                                <input type="radio" class="btn-check" value="Aux 78" name="Modelo" id="Aux 78">
+                                <label class="btn btn-outline-primary" for="Aux 78">Aux 78</label>
+
+                                <input type="radio" class="btn-check" value="Aux 88" name="Modelo" id="Aux 88">
+                                <label class="btn btn-outline-primary" for="Aux 88">Aux 88</label>
+                            </div>
+                            
+                            <div class="btn-group-sm mod mod-especial">
+                                <input type="radio" class="btn-check" value="Evolution" name="Modelo" id="Evolution">
+                                <label class="btn btn-outline-primary" for="Evolution">Evolution</label>
+                                
+                                <input type="radio" class="btn-check" value="Pratic" name="Modelo" id="Pratic">
+                                <label class="btn btn-outline-primary" for="Pratic">Pratic</label>
+
+                                <input type="radio" class="btn-check" value="Tatame" name="Modelo" id="Tatame">
+                                <label class="btn btn-outline-primary" for="Tatame">Tatame</label>
+                            </div>
+
+                            
+
+                            
+
+                            
+
+                        </div>
+                    </div>
+
+                </div>
+                
+
+                <label for="Quantidade" class="form-label">Quantidade:</label>
+
+                <input type="range" class="form-range" min="1" max="20" step="1"  value="1">
+                <input type="number" class="form-control" id="Quantidade" name="Quantidade" min="1" max="20" value="">
+
+                <!-- <label for="Concluídos" class="form-label">Concluídos:</label>
+
+                <input type="range" class="form-range" min="1" max="20" step="1"  value="1">
+                <input type="number" class="form-control" id="Concluídos" name="Concluídos" min="1" max="20" value="1"> -->
+
+                <label for="" class="form-label">Dimensões:</label>
+                <div class="btn-group-sm" role="group" aria-label="Basic radio toggle button group">
+                    <input type="radio" class="btn-check" name="Dimensões" value="outro" id="doutro">
+                    <label class="btn btn-outline-primary" for="doutro">Outro</label>
+
+                    <input type="radio" class="btn-check" name="Dimensões" value="78" id="78">
+                    <label class="btn btn-outline-primary" for="78">78</label>
+
+                    <input type="radio" class="btn-check" name="Dimensões" value="88" id="88">
+                    <label class="btn btn-outline-primary" for="88">88</label>
+
+                    <input type="radio" class="btn-check" name="Dimensões" value="96" id="96">
+                    <label class="btn btn-outline-primary" for="96">96</label>
+
+                    <input type="radio" class="btn-check" name="Dimensões" value="1x2" id="1x2">
+                    <label class="btn btn-outline-primary" for="1x2">1x2</label>
+
+                    <input type="radio" class="btn-check" name="Dimensões" value="108" id="108">
+                    <label class="btn btn-outline-primary" for="108">108</label>
+
+                    <input type="radio" class="btn-check" name="Dimensões" value="128" id="128">
+                    <label class="btn btn-outline-primary" for="128">128</label>
+
+                    <input type="radio" class="btn-check" name="Dimensões" value="138" id="138">
+                    <label class="btn btn-outline-primary" for="138">138</label>
+
+                    <input type="radio" class="btn-check" name="Dimensões" value="158" id="158">
+                    <label class="btn btn-outline-primary" for="158">158</label>
+
+                    <input type="radio" class="btn-check" name="Dimensões" value="186" id="186">
+                    <label class="btn btn-outline-primary" for="186">186</label>
+
+                    <input type="radio" class="btn-check" name="Dimensões" value="193" id="193">
+                    <label class="btn btn-outline-primary" for="193">193</label>
+
+                    
+                </div>
+
+                <label for="" class="form-label">Altura:</label>
+
+                <div class="btn-group-sm" role="group">
+                    <input type="radio" class="btn-check" name="Altura" value="outro" id="boutro">
+                    <label class="btn btn-outline-primary" for="boutro">Outro</label>
+
+                    <input type="radio" class="btn-check" name="Altura" value="10" id="h10">
+                    <label class="btn btn-outline-primary" for="h10">10</label>
+
+                    <input type="radio" class="btn-check" name="Altura" value="15" id="h15">
+                    <label class="btn btn-outline-primary" for="h15">15</label>
+
+                    <input type="radio" class="btn-check" name="Altura" value="20" id="h20">
+                    <label class="btn btn-outline-primary" for="h20">20</label>
+
+                    <input type="radio" class="btn-check" name="Altura" value="23" id="h23">
+                    <label class="btn btn-outline-primary" for="h23">23</label>
+
+                    <input type="radio" class="btn-check" name="Altura" value="25" id="h25">
+                    <label class="btn btn-outline-primary" for="h25">25</label>
+
+                    <input type="radio" class="btn-check" name="Altura" value="30" id="h30" checked>
+                    <label class="btn btn-outline-primary" for="h30">30</label>
+
+                    <input type="radio" class="btn-check" name="Altura" value="35" id="h35">
+                    <label class="btn btn-outline-primary" for="h35">35</label>
+
+                    <input type="radio" class="btn-check" name="Altura" value="40" id="h40">
+                    <label class="btn btn-outline-primary" for="h40">40</label>
+                </div>
+
+                <label for="Classe" class="form-label">Classe:</label>
+
+                <div class="btn-group-sm" role="group">
+                    <input type="radio" class="btn-check" name="Classe" value="Comum" id="tComum" checked>
+                    <label class="btn btn-outline-primary" for="tComum">Comum</label>
+
+                    <input type="radio" class="btn-check" name="Classe" value="Gold" id="Gold">
+                    <label class="btn btn-outline-primary" for="Gold">Gold</label>
+
+                    <input type="radio" class="btn-check" name="Classe" value="Gold A.D." id="Gold A.D.">
+                    <label class="btn btn-outline-primary" for="Gold A.D.">Gold A.D.</label>
+
+                    <input type="radio" class="btn-check" name="Classe" value="Gold Luxo" id="Gold Luxo">
+                    <label class="btn btn-outline-primary" for="Gold Luxo">Gold Luxo</label>
+
+                    <input type="radio" class="btn-check" name="Classe" value="Prime" id="Prime">
+                    <label class="btn btn-outline-primary" for="Prime">Prime</label>
+
+                    <input type="radio" class="btn-check" name="Classe" value="Diamante" id="Diamante">
+                    <label class="btn btn-outline-primary" for="Diamante">Diamante</label>
+                </div>
+
+                <label for="exampleDataList" class="form-label">Tecido:</label>
+                <div class="btn-group-sm" role="group">
+
+                    <input type="radio" class="btn-check" name="Tecido" value="Comum" id="Comum" checked>
+                    <label class="btn btn-outline-primary" for="Comum">Comum</label>
+
+                    <input type="radio" class="btn-check" name="Tecido" value="Couro" id="Couro">
+                    <label class="btn btn-outline-primary" for="Couro">Couro</label>
+
+                    <input type="radio" class="btn-check" name="Tecido" value="Facton" id="Facton">
+                    <label class="btn btn-outline-primary" for="Facton">Facton</label>
+
+                    <input type="radio" class="btn-check" name="Tecido" value="Linho" id="Linho">
+                    <label class="btn btn-outline-primary" for="Linho">Linho</label>
+
+                    <input type="radio" class="btn-check" name="Tecido" value="Veludo" id="Veludo">
+                    <label class="btn btn-outline-primary" for="Veludo">Veludo</label>
+
+                    <input type="radio" class="btn-check" name="Tecido" value="Especial" id="Especial">
+                    <label class="btn btn-outline-primary" for="Especial">Especial</label>
+
+                    <input type="radio" class="btn-check" name="Tecido" value="CAP" id="CAP">
+                    <label class="btn btn-outline-primary" for="CAP">CAP</label>
+
+                    <input type="radio" class="btn-check" name="Tecido" value="Bulcle" id="Bulcle">
+                    <label class="btn btn-outline-primary" for="Bulcle">Bulcle</label>
+                </div>
+
+                <label for="Cor" class="form-label">Cor:</label>
+                <div class="input-group-sm">
+
+                    <input class="form-control" list="corlista" name="Cor" id="Cor" placeholder="Cor" required>
+
+
+                    <datalist id="corlista">
+                    <option value="PP1 (Bege Claro)"></option>
+                </datalist>
+                </div>
+
+                <label for="Situação" class="form-label">Situação:</label>
+                <select class="form-select" id="Situação">
+                    <option selected>Situação</option>
+                    <option value="Aguardando">Aguardando</option>
+                    <option value="Producao">Em produção</option>
+                    <option value="Finalizando">Finalizando</option>
+                    <option value="Estoque">Estoque</option>
+                    <option value="Entregue">Entregue</option>
+                    <option value="Cancelado">Cancelado</option>
+                    <option value="Devolvido">Devolvido</option>
+                    <option value="Avariado">Avariado</option>
+                    <option value="Assistencia">Assistencia</option>
+                </select>
+
+                <label for="Observações" class="form-label">Observações:</label>
+                <input type="text" class="form-control" name="Observações" value="" id="Observações">
+    
+            </form>
+
+        
+        </div>
+        
+
+        <button type="submit" form="order" class="btn btn-primary submit my-5 right">Salvar</button>
+
+        <table id="table" class="table table-striped table-hover mt-3 text-center table-bordered">
+            <thead></thead>
+            <tbody></tbody>
+        </table>
+        <br><br>
+    </main>
+    
+    <aside class="page" id="page-print">
+        <div class="tags" id="tagGenerator">
+
+        </div>
+    </aside>
+
+    <section id="modal"></section>
+    <footer></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <script>
+
+        const tempOrder = {
+            client: "L&G Art",
+            date: "2023-10-14",
+            type: "Bau",
+            quantity: "5",
+            size: "193",
+            height: "30",
+            clothType: "Facton",
+            color: "PP4",
+            class: "Gold",
+            aux: "none",
+            upholsterer: "none",
+            status: "Produzindo",
+            obs: "none",
+            deadline: "2023-10-19",
+            delivery: "no",
+            tag: ""
+        }
+        let edit = false
+        const orderForm = document.getElementById('order')
+
+        const getLocalStorage = () => JSON.parse(localStorage.getItem('db_order1')) ?? []
+        const setLocalStorage = (dbClient) => {
+            localStorage.setItem("db_order1", JSON.stringify(dbClient))
+            edit = false
+            updateOrdersTable()
+        }
+
+        const createOrder = (order) => {
+            const db_order = getLocalStorage()
+            db_order.push(order)
+            setLocalStorage(db_order)
+        }
+
+        const readOrder = (index) => {
+            const db_order = getLocalStorage()
+            return db_order[index]
+        }
+
+        const updateOrder = (index, order) => {
+            const db_order = getLocalStorage()
+            db_order[index] = order
+            setLocalStorage(db_order)
+        }
+
+        const deleteOrder = (index) => {
+            const db_order = getLocalStorage()
+            db_order.splice(index, 1)
+            setLocalStorage(db_order)
+        }
+
+
+        const table = document.getElementById('table')
+        const thead = table.getElementsByTagName('thead')[0]
+        const tbody = table.getElementsByTagName('tbody')[0]
+
+        const tagGenerator =  document.getElementById('tagGenerator')
+
+        const createHeadTable = (keys) => {
+            const titles = document.createElement('tr')
+            titles.innerHTML = ``
+            const objs = ["Cliente"]
+
+            keys.forEach(element => {
+                if (objs.includes(element)){
+                    titles.innerHTML += `
+                    <td> </td>
+                `
+                }
+                
+            })
+            thead.appendChild(titles)
+        }
+        
+        const createRowTable = (order, index) => {
+            const row = document.createElement('tr')
+            const td = document.createElement('td')
+            
+            obj = Object.keys(order)
+            td.innerHTML = ``
+            const objs = ["Cliente"]
+
+            createTags(order)
+
+            obj.forEach(element => {
+
+                if (objs.includes(element)){
+                    if(element == "Vem buscar" &&  order[element] == "Não"){
+                        td.innerHTML += `
+                            <td></td>
+                        `
+                    }
+                    else{
+                        td.innerHTML += `
+                            <b> ${order['Cliente']} </b> ${order['Quantidade']}x
+                        `
+                        if(['Baú','Bicama'].includes(order['Categoria'])){
+                            td.innerHTML += `
+                            ${order['Categoria']} ${order['Classe']} ${order['Dimensões']} ${order['Modelo']}
+                            `
+                        }
+                        else if(['Especial'].includes(order['Categoria'])){
+                            td.innerHTML += `
+                            ${order['Modelo']} ${order['Classe']} ${order['Dimensões']}
+                            `
+                        }
+                        else{
+                            td.innerHTML += `
+                            ${order['Categoria']} ${order['Modelo']} ${order['Classe']} ${order['Dimensões']}x${order['Altura']}
+                            `
+                        }
+                    }
+                }
+            })
+            
+            td.innerHTML += `
+                    <input type='button' onClick="editOrder(${index})" value="Editar" />
+                    <input type='button' onClick="deleteOrder(${index})" value="Remover" />
+            `
+            row.appendChild(td)
+            tbody.appendChild(row) 
+        }
+
+        const createTags = (order) => {
+            
+
+            
+            /* keys = ['Cliente','Categoria','Modelo','Dimensões','Tecido','Cor'] */
+            obj = Object.keys(order)
+
+
+            if(order.Quantidade != null && order.Quantidade > 0 ){
+                for (let i = 0; i < order.Quantidade; i++) {
+                    const tags = document.createElement('div')
+                    const div = document.createElement('div')
+                    tags.classList.add("tag")
+                    div.innerHTML = ``
+                    var tecido = (order['Tecido'] != "Comum") ? order['Tecido'] : ""
+                    var ifbau = ['Baú','Bicama'].includes(order['Categoria'])
+                    var classe = (order['Classe'] != "Comum") ? order['Classe'] : ""
+                    div.innerHTML += `
+                       <p><b>${order['Cliente']}</b></p>
+                    `
+                    if(['Baú','Bicama'].includes(order['Categoria'])){
+                        div.innerHTML += `
+                        <p>${order['Categoria']} ${classe} ${order['Dimensões']} ${order['Modelo']}</p>
+                        `
+                    }
+                    else if(['Especial'].includes(order['Categoria'])){
+                        div.innerHTML += `
+                        <p>${order['Modelo']} ${classe} ${order['Dimensões']}</p>
+                        `
+                    }
+                    else{
+                        div.innerHTML += `
+                        <p>${order['Categoria']} ${order['Modelo']} ${classe} ${order['Dimensões']}x${order['Altura']}</p>
+                        `
+                    }
+
+                    div.innerHTML += `
+                        <p>${tecido} ${order['Cor']}</p>
+                        `
+                        /* <p>${
+                            order['Categoria'] + " "}
+                            ${(!ifbau) ? order['Classe'] : "" + order['Modelo']}
+                            ${
+                                (['Baú','Bicama'].includes(order['Categoria']))?
+                                "":"x"+order['Altura']
+                            }
+
+                        
+                            ${order['Dimensões']}${
+                                (['Baú','Bicama'].includes(order['Categoria']))?
+                                "":"x"+order['Altura']
+                            }
+                         </p>
+                        <p>   ${tecido} ${order['Cor']}
+                        </p>
+                    </div> */
+                    
+                            
+                    
+                    div.innerHTML += ``
+                    /* obj.forEach(element => {
+                        console.log(order[element])
+                        if(keys.includes(element) && order[element] != "Comum"){
+                            tags.innerHTML += `
+                            ${order[element]}
+                        `
+                        }
+                        
+                    }) */
+                    tags.appendChild(div)
+                    tagGenerator.appendChild(tags)
+                }
+            }
+            
+            
+        }
+
+        const editOrder = (index) => {
+            edit = index
+            
+            const db_order = getLocalStorage()
+            var obj = Object.keys(db_order[0])
+            
+            obj.forEach(element => {
+                if(element == "Vem buscar"){
+                    if(readOrder(index)[element] == "Sim"){
+                            orderForm[element].nextElementSibling.checked = true
+                    }
+                    else    orderForm[element].nextElementSibling.checked = false
+                }
+                
+                orderForm[element].value = readOrder(index)[element]
+            })
+
+        }
+
+        const updateOrdersTable = () => {
+            const db_order = getLocalStorage()
+
+            tbody.innerHTML = ''
+            thead.innerHTML = ''
+            tagGenerator.innerHTML = ''
+
+            db_order[0] ? createHeadTable(Object.keys(db_order[0])) : console.log("DB empty")
+            db_order.forEach(createRowTable)
+
+            orderForm.reset()
+        }
+
+        const formData = () => {
+            const data 		= new FormData(orderForm);
+            return          Object.fromEntries(data.entries());
+        }
+
+        const checkThis = (id) => {
+            document.getElementById(id).checked =  true
+        }
+
+        function isNumber(n) { return !isNaN(parseFloat(n)) && !isNaN(n - 0) }
+
+        updateOrdersTable()
+
+        const handleSubmit = (event) => {
+            event.preventDefault();
+            isNumber(edit) ? updateOrder(edit,formData()) : createOrder(formData())
+        }
+        
+        //events
+        orderForm.addEventListener('submit', handleSubmit)
+
+        const checkbox = document.querySelectorAll('input[type="checkbox"]')
+        const range = document.querySelectorAll('input[type="range"]')
+        
+        checkbox.forEach(box => {
+            box.addEventListener('click', (e) => {
+                e.target.previousElementSibling.value = (e.target.checked) ? "Sim" : "Não"
+            })
+        })
+
+        range.forEach(slide => {
+            slide.addEventListener('input', (e) => {
+                e.target.nextElementSibling.value = e.target.value      
+            })
+        })
+        function toPrint(){
+            var qtags = document.getElementById("qtags").value
+            console.log(qtags)
+            if(qtags > 0){
+                for (let i = 1; i <= qtags; i++) {
+                    const tags = document.createElement('div')
+                    tags.classList.add("tag")
+                    tags.innerHTML = ``
+
+                    tagGenerator.insertBefore(tags, tagGenerator.firstChild);
+                }
+            
+            }
+            window.print()
+        }
+        var limit = 1024 * 1024 * 5; // 5 MB
+        var remSpace = limit - unescape(encodeURIComponent(JSON.stringify(localStorage))).length;
+    </script>
+</body>
+</html>

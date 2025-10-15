@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <title>Parse 2</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 8pt;
+        line-height: .75em;
+      }
+      .hide{display: none;}
+      p{margin-left: 40px;}
+      .pedido-section {
+        margin-bottom: 1px;
+        /* border: 1px solid #ddd; */
+        padding: 1px;
+        border-radius: 5px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 5px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 2px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .order-info p {
+        margin: 5px 0;
+      }
+      @media print {
+        input[type="checkbox"]{
+          display: none;
+        }
+            .button{ display: none;}
+      }
+      .button{
+          margin-bottom: 20px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .delete-button {
+
+        background-color: #ff4d4d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .delete-button:hover {
+        background-color: #cc0000;
+      }
+      .checkbox-container {
+        margin-bottom: 5px;
+        position: relative;
+      } 
+      input[type="checkbox"]{
+        position: absolute;
+        margin-top: 3em;
+      }
+      .order-title{
+        display: flex;
+        height: 2em;
+        max-width: 460px;
+        justify-content: space-between;
+        align-items: center;
+        gap:2em;
+        border-top: 1px solid #ddd;
+      }
+      .order-title h4{ margin: none; padding: none;
+      }
+      html, body{ background-color: #eee; overflow-x: hidden; overflow-y: scroll;}
+      thead{ font-weight: bold;} td{min-width: 100px;}
+      
+      .page {
+          width: 210mm;
+          min-height: 297mm;
+          padding: 10mm 7mm;
+          margin: 10mm auto;
+          border: 1px #D3D3D3 solid;
+          border-radius: 5px;
+          background: white;
+          box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+      }
+      
+      .tags {
+          height: 257mm;
+          /* outline: .5cm #FFEAEA solid; */
+          display: grid;
+          grid-template-columns: auto auto auto;
+          align-content: start;
+          justify-content: start;
+          
+      }
+      
+      .tag {
+          background-color: #ccc;
+          display: grid;
+          align-items: center;
+          justify-content: center;
+          height: 26mm;
+          width: 64.5mm;
+      }
+      .tag p{
+          padding: 0;
+          margin: 0;
+      }
+      
+      @page {
+              size: A4;
+              margin: 0;
+              padding: 0;
+          }
+
+      @media print {
+          html,
+          body {
+              width: 210mm;
+              height: 297mm;
+              padding: 0;
+              margin: 0;
+          }
+          .page {
+              margin: 0;
+              border: 0;
+              border-radius: initial;
+              width: initial;
+              min-height: initial;
+              box-shadow: initial;
+              background: initial;
+              page-break-after: always;
+          }
+          header, main, footer{display: none;}
+      }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <label for="file" class="button"> Import XLS
+        <input type="file" id="file" accept=".xls" onchange="">
+    </label>
+
+    <aside class="page hide" id="page-print">
+        <div class="tags" id="tagGenerator">
+
+        </div>
+    </aside>
+
+    <button class="button hide" onclick="toggleCheckboxes()">Inverter Checkboxes</button>
+    <button class="delete-button hide button" onclick="deleteSelectedOrders()">Deletar Pedidos Selecionados</button>
+    <button class="tag-button hide button" onclick="gentag()">Gerar Etiquetas</button>
+
+    <script src="app.js"></script>
+</body>
+</html>
