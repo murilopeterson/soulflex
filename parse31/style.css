@@ -14,10 +14,13 @@ header{
     position: fixed;
     background-color: #212529;
     height: 100vh;
+    box-sizing: border-box;
+    padding: 3rem 1.5rem;
     width: 250px;
 }
 
 main{
+    min-width: max-content;
     margin-left: 250px;
     padding: 3rem 1.5rem;
     line-height: .75em;
@@ -94,6 +97,7 @@ input[type="file"] {
         align-items: center;
         gap:2em;
         border-top: 1px solid #ddd;
+        min-width: max-content
       }
       .order-title h4{ margin: none; padding: none;
       }

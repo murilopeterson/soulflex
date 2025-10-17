@@ -305,11 +305,21 @@ function removeDoublesArr(array) {
     );
 }
 
+function renderbyname(){
+    reportArr.sort((a, b) => a.customer.localeCompare(b.customer));
+    render(reportArr)
+}
+
+function renderbydate(){
+    reportArr.sort((a, b) => a.id.localeCompare(b.id));
+    render(reportArr)
+}
+
 
 function render(data){
     
 
-    data.sort((a, b) => a.customer.localeCompare(b.customer));
+    //data.sort((a, b) => a.customer.localeCompare(b.customer));
 
     const container = document.getElementById('app');
 
@@ -410,24 +420,31 @@ function gentag(){
             let contador = 0;
             let letraAtual = 'A';
 
-            for(let i = 1; i<= item.qty * (item.parts + item.lid +item.headboard); i++){
+            const total_item_parts = item.parts + item.lid +item.headboard
+
+            for(let i = 1; i<= item.qty * total_item_parts; i++){
                 
-                if (contador % item.parts + item.lid +item.headboard === 0) {
+                if (contador % total_item_parts === 0) {
                     letraAtual = String.fromCharCode(letraAtual.charCodeAt(0) + 1);
                     contador = 0;
                 }
+
                 contador++
                     html += `
                 
                         <div class="tag order-details details">
-                            <div class="order">${order.id}</div> <h1 class="order-pair">${letraAtual}</h1>
-                            <div class="product"><h2>${item.model} ${item.feature || ""} ${item.size}</h2>
+                            <div class="order">${order.id}</div>`
+
+                if(total_item_parts > 1 )
+                    html += `<h1 class="order-pair">${letraAtual}</h1>`
+
+                    html += `<div class="product"><h2>${item.model} ${item.feature || ""} ${item.size}</h2>
                             <h3>${item.cloth}</h3></div>
                             
                             
 
                             <div class="client"><h4>${order.customer}</h4></div>
-                            <div>Ateliê Soulflex - 62,409582/0001-11</div>
+                            <div>Ateliê Soulflex - 62.409582/0001-11</div>
                             
                             
                         </div>
