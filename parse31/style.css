@@ -1,0 +1,161 @@
+html,body{
+    background-color: #d9dce0;
+    margin: 0;
+    padding: 0;
+}
+body {
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        
+        display:flex
+}
+header{
+    display:flex;
+    position: fixed;
+    background-color: #212529;
+    height: 100vh;
+    width: 250px;
+}
+
+main{
+    margin-left: 250px;
+    padding: 3rem 1.5rem;
+    line-height: .75em;
+    box-sizing: border-box
+}
+
+input[type="file"] {
+  display: none;
+}
+
+.button-upload{
+  border: 1px solid #212529 !important; 
+  cursor: pointer;
+  transition: ease 300ms;
+}
+
+.button-upload:hover{
+  border: 1px solid #1d2024!important; 
+  background-color:#212529;
+  color:#fff
+}
+      h1,h2,h3,h4,h5{
+        margin: 0;
+        padding: 0;
+        line-height: 1em ;
+      }
+
+      h3{ margin-top: 20px; color:#888}
+
+      .hide{display: none;}
+      #app p{margin-left: 40px;}
+      .pedido-section {
+        margin-bottom: 1px;
+        /* border: 1px solid #ddd; */
+        padding: 1px;
+        border-radius: 5px;
+      }
+
+      .order-info p {
+        margin: 5px 0;
+      }
+
+      .button{
+          margin-bottom: 20px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .delete-button {
+
+        background-color: #ff4d4d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .delete-button:hover {
+        background-color: #cc0000;
+      }
+      .checkbox-container {
+        margin-bottom: 5px;
+        position: relative;
+      } 
+      input[type="checkbox"]{
+        position: absolute;
+        margin-top: 3em;
+      }
+      .order-title{
+        display: flex;
+        height: 2em;
+        max-width: 460px;
+        justify-content: space-between;
+        align-items: center;
+        gap:2em;
+        border-top: 1px solid #ddd;
+      }
+      .order-title h4{ margin: none; padding: none;
+      }
+
+
+      .tag {
+          background-color: #eee;
+          border: 1px solid #bbb;
+          display: grid;
+          align-items: center;
+          box-sizing: border-box;
+          padding: 3mm;
+          margin: 0;
+          height: 50mm;
+          width: 100mm;
+          position: relative;
+      }
+
+      .product {
+          font-size: 18px;
+          font-weight: bold;
+          line-height: 1.25em;
+      }
+
+      .client {
+          font-size: 14px;
+          line-height: 1.25em;
+          padding-top: 15px;
+          border-top: 1px solid #ccc;
+      }
+
+      .order-pair{
+        position: absolute;
+        right: 0;
+        font-size: 40mm;
+        opacity: .1;
+      }
+
+@media print {
+
+    @page {
+        size: 100mm 50mm;
+        margin: 0; 
+    }
+
+
+    body {
+        margin: 0;
+        
+        width: 96mm;
+        height: 46mm;
+        box-sizing: border-box;
+        page-break-after: always; 
+        overflow: hidden;
+    }
+
+
+    .no-print {
+        display: none !important;
+    }
+
+    * {
+        page-break-inside: avoid;
+    }
+}

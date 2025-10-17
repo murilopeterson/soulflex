@@ -55,8 +55,8 @@ class App{
         this.list   = new OrderList()
 
         if(localStorage.getItem("soulflex") !== null){
-            //const db = localStorage.getItem("soulflex")
-            //this.render(JSON.parse(db))
+            const db = localStorage.getItem("soulflex")
+            this.render(JSON.parse(db))
         }
 
         document.getElementById('file').addEventListener('change', async function (event) {

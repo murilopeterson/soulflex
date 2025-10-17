@@ -34,13 +34,15 @@ function readXls(event) {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         parseXls(jsonData);
+        
+        const btns = document.querySelectorAll(".button")
 
         if (reportArr.length !== 0 && requestArr.length !== 0) {
-           
+            
             requestArr.forEach(item => {
                 updateOrder(reportArr,item.id, "obs", item.obs)
             })
-            const btns = document.querySelectorAll(".button")
+            
             btns.forEach(btn => {
                 btn.classList.toggle('hide');
             });
@@ -48,6 +50,8 @@ function readXls(event) {
             //reportArr.unshift(meta);
             //console.log(reportArr)
             
+        }else if(reportArr.length !== 0){
+            render(reportArr)
         }
         
         //console.log(jsonData);
@@ -163,7 +167,8 @@ function report(data){
 
                 const sizeIndex = sizeMatch ? normalizedStr.indexOf(sizeMatch[0]) : normalizedStr.length;
 
-                var type = normalizedStr.slice(0, sizeIndex).trim().replace("BOX", '').replace("GRAN", '').replace(/\s+/g, ' ').trim() || "";
+                var type = normalizedStr.slice(0, sizeIndex).trim().replace(/\s+/g, ' ').trim() || "";
+                //var type = normalizedStr.slice(0, sizeIndex).trim().replace("BOX", '').replace("GRAN", '').replace(/\s+/g, ' ').trim() || "";
 
                 const material = sizeMatch ? normalizedStr.slice(sizeIndex + sizeMatch[0].length).trim() || "N/A" : "N/A";
 
@@ -177,7 +182,7 @@ function report(data){
 
                 const cond = ["BICAMA", "BAU", "TATAME"]
                 if(!cond.includes(type.toUpperCase().split(" ")[0])){
-                    type = "BASE "+type
+                    //type = "BASE "+type
                 }
 
                 if(pt[0] > 138 || type.includes("PARTID") ){
@@ -206,7 +211,8 @@ function report(data){
                 let newItem =  {
                     id: item.row[0],
                     model: type,
-                    size: `${pt[0]}x${pt[1]}`,
+                    //size: `${pt[0]}x${pt[1]}`,
+                    size: size,
                     height: pt[2] ?? "",
                     feature: feature,
                     parts: parts,
@@ -301,6 +307,7 @@ function removeDoublesArr(array) {
 
 
 function render(data){
+    
 
     data.sort((a, b) => a.customer.localeCompare(b.customer));
 
@@ -328,10 +335,10 @@ function render(data){
                     ${order.obs ? "<p><strong>Obs</strong>: "+ order.obs + "</p>" : ""}
                     <p>
                         <small class="order-details details"> 
-                            ${qtys} ${(qtys > 1) ? "camas ":"cama"} 
-                            ${parts ? parts + " peça " : ""}
-                            ${headboards ? headboards + " cabeceira " : ""}
-                            ${lids ? lids + " tampa" : ""}
+                            ${qtys} ${(qtys > 1) ? "camas ":"cama"}
+                            ${parts ? parts + " peça(s) " : ""}
+                            ${headboards ? headboards + " cabeceira(s) " : ""}
+                            ${lids ? lids + " tampa(s)" : ""}
                         </small>
                     </p>
         `;  
@@ -341,11 +348,11 @@ function render(data){
                     <p>
                     ${item.qty} - ${item.model} ${item.feature || ""} ${item.size.split("x")[0]}${item.height ? "x"+item.height : ""} 
                     ${item.cloth}
-                        <small class="item-details details"> 
+                        <!--<small class="item-details details"> 
                             ${item.parts ? item.parts * item.qty + "pç " : ""}
                             ${item.headboard ? item.headboard * item.qty + "cab " : ""}
                             ${item.lid ? item.lid * item.qty + "tamp " : ""}
-                        </small>
+                        </small>-->
                     </p>
                     </div>
                 
@@ -388,26 +395,46 @@ function gentag(){
         let lids = 0
         let headboards = 0
         let parts = 0
-        let total = 0
-        let temp = []
+
+        const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
         order.items.forEach((item, index, arr) => {
+
+           
+
             parts += item.parts * item.qty
             headboards += item.headboard * item.qty
             lids += item.lid * item.qty
             parts = parts + headboards + lids
-            for(let i = 1; i<= parts; i++){
+
+            let contador = 0;
+            let letraAtual = 'A';
+
+            for(let i = 1; i<= item.qty * (item.parts + item.lid +item.headboard); i++){
+                
+                if (contador % item.parts + item.lid +item.headboard === 0) {
+                    letraAtual = String.fromCharCode(letraAtual.charCodeAt(0) + 1);
+                    contador = 0;
+                }
+                contador++
                     html += `
                 
-                        <p class="order-details details"> 
-                            ${item.model} ${item.feature || ""} ${item.size.split("x")[0]}${item.height ? "x"+item.height : ""} 
-                    ${item.cloth},
-                            ${order.id}
-                        </p>
+                        <div class="tag order-details details">
+                            <div class="order">${order.id}</div> <h1 class="order-pair">${letraAtual}</h1>
+                            <div class="product"><h2>${item.model} ${item.feature || ""} ${item.size}</h2>
+                            <h3>${item.cloth}</h3></div>
+                            
+                            
+
+                            <div class="client"><h4>${order.customer}</h4></div>
+                            <div>Ateliê Soulflex - 62,409582/0001-11</div>
+                            
+                            
+                        </div>
                             
                     `;
                 }
-            parts = 0
+            
             
         })
         /* total = parts + headboards + lids
