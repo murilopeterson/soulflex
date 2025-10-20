@@ -78,7 +78,7 @@ function parseXls(json){
         reportArr = report(table)
         meta = title
         //console.log(products, sellers, customers, sizes, clothTypes, clothColors, heights)
-        //console.log(products)
+        console.log(products)
     }
 }
 
@@ -206,7 +206,7 @@ function report(data){
                 
                 types.push(type)
 
-                let model = {type:type, size:pt[0], feature:feature, parts:parts}
+                let model = {type: type, size: size, feature: feature, qty: item.row[2]}
 
                 let newItem =  {
                     id: item.row[0],
@@ -241,7 +241,7 @@ function report(data){
     sizes = removeDoublesArr(sizes)
     heights = removeDoublesArr(heights)
     customers = removeDoublesArr(customers)
-    products = removeDoublesArr(products)
+    //products = removeDoublesArr(products)
     
     return obj
 }
@@ -399,6 +399,18 @@ function render(data){
               
         `;
     });
+
+    const totalByGroup = products.reduce((acc, item) => {
+        const key = `${item.type}-${item.feature}-${item.size}`;
+        acc[key] = (acc[key] || 0) + item.qty;
+        return acc;
+    }, {});
+    html += `<div class="products-total">`
+    Object.entries(totalByGroup).forEach(([key, qty]) => {
+        const [type, feature, size] = key.split('-');
+        html += `<p>${qty}x ${type} ${feature} ${size}</p>`;
+    });
+    html += `</div>`
     
     container.innerHTML = html;
 }
