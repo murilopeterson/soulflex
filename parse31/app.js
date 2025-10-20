@@ -315,6 +315,23 @@ function renderbydate(){
     render(reportArr)
 }
 
+function checkdate(dateStr) {
+    const [day, month, year] = dateStr.split('/').map(Number);
+    const inputDate = new Date(year, month - 1, day);
+    const currentDate = new Date();
+
+    if (isNaN(inputDate)) return false;
+
+    let businessDays = 0;
+    const start = new Date(Math.min(currentDate, inputDate));
+    const end = new Date(Math.max(currentDate, inputDate));
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    if (d.getDay() % 6) businessDays++;
+    }
+
+    return businessDays > 5;
+}
 
 function render(data){
     
@@ -322,11 +339,17 @@ function render(data){
     //data.sort((a, b) => a.customer.localeCompare(b.customer));
 
     const container = document.getElementById('app');
+    const recent_orders = []
 
-    let html = `<p>${meta[1]}</p>`;
-  /*    */
+    let html = `<small class="document-date">${meta[1]}</small>`;
+
     data.forEach((order) => {
         
+        if(checkdate(order.sale_date)){
+            recent_orders.push(order)
+            return
+        }
+
         let lids = 0
         let headboards = 0
         let parts = 0
@@ -337,6 +360,8 @@ function render(data){
             lids += item.lid * item.qty
             qtys += item.qty
         })
+
+        
         html += `
             <label class="pedido-section" for="order-${order.id}">
                 <input type="checkbox" id="order-${order.id}" value="${order.id}"/>
@@ -368,47 +393,46 @@ function render(data){
                 
                 `;
             })
-
-        /* for (const item of order) {
-            if (!item.includes("PEDIDO")) {
-                html += `
-                    <p>${item}</p>
-                `;
-            }
-        } */
-        
-        /* order.subitems.forEach(subitem => {
-          html += `
-              <p><strong>${subitem.qtd} . </strong> ${subitem.model} <strong>${subitem.size}</strong> - ${subitem.cloth}</p>
-          `;
-        }); */
         
         html += `</div>
             </label>
               
         `;
-      });
-      //console.log(html)
-      container.innerHTML = html;
+    });
+    
+    container.innerHTML = html;
 }
+
+function setPageSize(cssPageSize) {
+    const style = document.createElement('style');
+    style.innerHTML = `@page {size: ${cssPageSize}}`;
+    document.head.appendChild(style);
+}
+
 function gentag(){
 
     
     const data = reportArr
-    
+
+    document.getElementsByTagName('main')[0].classList.toggle("no-print")
+    setPageSize('100mm 50mm');
+    document.body.classList.toggle("tag-print")    
+
     const container = document.getElementById('tagGenerator');
 
     let html = ``;
 
     data.forEach((order) => {
-       
+
+       if(checkdate(order.sale_date)){
+            return
+        }
+
         let lids = 0
         let headboards = 0
         let parts = 0
 
-        const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-
-        order.items.forEach((item, index, arr) => {
+        order.items.forEach((item) => {
 
            
 
@@ -418,7 +442,7 @@ function gentag(){
             parts = parts + headboards + lids
 
             let contador = 0;
-            let letraAtual = 'A';
+            let letraAtual = '@';
 
             const total_item_parts = item.parts + item.lid +item.headboard
 
@@ -476,7 +500,7 @@ function gentag(){
 
       container.innerHTML = html;
 
-      document.getElementById('page-print').classList.toggle("hide")
+      //document.getElementById('page-print').classList.toggle("hide")
 
 }
 // Função para deletar pedidos selecionados

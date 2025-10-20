@@ -5,7 +5,7 @@ html,body{
 }
 body {
         font-family: Arial, sans-serif;
-        font-size: 14px;
+        font-size: 13px;
         
         display:flex
 }
@@ -31,6 +31,7 @@ input[type="file"] {
   display: none;
 }
 
+
 .button-upload{
   border: 1px solid #212529 !important; 
   cursor: pointer;
@@ -42,26 +43,38 @@ input[type="file"] {
   background-color:#212529;
   color:#fff
 }
-      h1,h2,h3,h4,h5{
-        margin: 0;
-        padding: 0;
-        line-height: 1em ;
-      }
 
-      h3{ margin-top: 20px; color:#888}
+h1,h2,h3,h4,h5{
+  margin: 0;
+  padding: 0;
+}
 
-      .hide{display: none;}
-      #app p{margin-left: 40px;}
-      .pedido-section {
-        margin-bottom: 1px;
-        /* border: 1px solid #ddd; */
-        padding: 1px;
-        border-radius: 5px;
-      }
+h3{ color:#888}
 
-      .order-info p {
-        margin: 5px 0;
-      }
+.hide{display: none;}
+
+#app p{margin-left: 40px;}
+
+.document-date{
+  display: block;
+}
+
+.pedido-section {
+  position: relative;
+  margin-bottom: 1px;
+  padding: 1px;
+  border-radius: 5px;
+}
+
+.pedido-section input{
+  position: absolute;
+  left: 0;
+  top: 3.25rem;
+}
+
+.order-info p {
+  margin: 5px 0;
+}
 
       .button{
           margin-bottom: 20px;
@@ -84,15 +97,16 @@ input[type="file"] {
       .checkbox-container {
         margin-bottom: 5px;
         position: relative;
-      } 
-      input[type="checkbox"]{
-        position: absolute;
-        margin-top: 3em;
       }
+
+      .checkbox-container div p{
+        line-height: .5em;
+      } 
+
       .order-title{
         display: flex;
         height: 2em;
-        max-width: 460px;
+        max-width: 600px;
         justify-content: space-between;
         align-items: center;
         gap:2em;
@@ -104,22 +118,24 @@ input[type="file"] {
 
 
       .tag {
-          background-color: #eee;
-          border: 1px solid #bbb;
-          display: grid;
-          align-items: center;
-          box-sizing: border-box;
-          padding: 3mm;
-          margin: 0;
-          height: 50mm;
-          width: 100mm;
-          position: relative;
+        background-color: #eee;
+        display: grid;
+        align-items: center;
+        box-sizing: border-box;
+        padding: 3mm;
+        margin: 0;
+        height: 50mm;
+        width: 100mm;
+        position: relative;
       }
 
       .product {
-          font-size: 18px;
-          font-weight: bold;
-          line-height: 1.25em;
+        font-size: 18px;
+        font-weight: bold;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        height: 26mm;
       }
 
       .client {
@@ -133,18 +149,26 @@ input[type="file"] {
         position: absolute;
         right: 0;
         font-size: 40mm;
-        opacity: .1;
+        opacity: .31;
       }
 
 @media print {
 
     @page {
-        size: 100mm 50mm;
+        size: A4;
         margin: 0; 
     }
 
+    main{
+      margin-left: 0;
+    }
 
-    body {
+    .pedido-section input{
+      display: none;
+    }
+
+
+    body .tag-print {
         margin: 0;
         
         width: 96mm;
