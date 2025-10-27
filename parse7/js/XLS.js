@@ -1,50 +1,51 @@
-class XLS {
-    constructor(){
+export default class XLS {
+    constructor(target) {
+        this.data = null;
+        this.target = target.files[0];
+        this.read();
+    }
+
+    read() {
+        return new Promise((resolve, reject) => {
+            const file = this.target;
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                try {
+
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+
+                    const firstSheet = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheet];
+
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    this.parse(jsonData);
+                    resolve(this.data);
+
+                } catch (error) {
+                    reject(error);
+                }
+            };
+
+            reader.onerror = () => reject(reader.error);
+
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    parse(json) {
+
+        this.data = json.map(obj => ({
+            row: Object.values(obj)
+        }));
         
     }
+
+    getData() {
+        return this.data;
+    }
+
 }
 
-const abrirDB = () => new Promise((resolve, reject) => {
-  const req = indexedDB.open('meuDB', 1);
-  req.onerror = () => reject(req.error);
-  req.onsuccess = () => resolve(req.result);
-  req.onupgradeneeded = (e) => {
-    const db = e.target.result;
-    db.createObjectStore('data', { keyPath: 'id' });
-  };
-});
-
-// Operações genéricas (readwrite para put/delete, readonly para get/all)
-const opDB = async (mode, fn) => {
-  const db = await abrirDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(['data'], mode);
-    const store = tx.objectStore('data');
-    const req = fn(store);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-    tx.oncomplete = () => db.close();
-  });
-};
-
-// Salvar (put = insert/update)
-const salvar = (obj) => opDB('readwrite', (store) => store.put(obj));
-
-// Ler por ID
-const ler = (id) => opDB('readonly', (store) => store.get(id));
-
-// Ler todos
-const lerTodos = () => opDB('readonly', (store) => store.getAll());
-
-// Deletar
-const deletar = (id) => opDB('readwrite', (store) => store.delete(id));
-
-// Exemplo de uso
-(async () => {
-  try {
-    await salvar({ id: 1, valor: 'teste' });
-    console.log(await ler(1)); // { id: 1, valor: 'teste' }
-    console.log(await lerTodos()); // array com itens
-    await deletar(1);
-  } catch (e) { console.error(e); }
-})();

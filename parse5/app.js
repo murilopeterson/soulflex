@@ -196,7 +196,7 @@ class App{
 
     render(data){
         
-        return
+        //return
         //const container = document.getElementById('list');
         let html = ``;
         //const clientsx = []
