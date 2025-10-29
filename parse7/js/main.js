@@ -1,4 +1,4 @@
-import XLS from "./xls.js";
+import XLS from "./XLS.js";
 import DB from "./IDB.js";
 import Util from "./Util.js";
 
