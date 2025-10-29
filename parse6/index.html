@@ -120,7 +120,7 @@
             document.getElementById("app-render").innerHTML = ""
             const data = getLocalStorage()
 
-            //data[0] ? console.log(Object.keys(data[0])) : console.log("DB empty")
+            data[0] ? console.log(Object.keys(data[0])) : console.log("DB empty")
             data.forEach(generateTable)
 
             customer.reset()

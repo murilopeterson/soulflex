@@ -1,6 +1,6 @@
-import XLS from "./xls.js"
-import DB from "./IndexedDB.js"
-import Util from "./Util.js"
+import XLS from "./xls.js";
+import DB from "./IDB.js";
+import Util from "./Util.js";
 
 class App{
     constructor(){
@@ -110,10 +110,13 @@ class App{
                     next_id++;
                 }
 
+                const datecheck = this.check_deadline(Util.check_date(result[1]))
+
                 const order = {
                     op:     Number(result[0]),
                     sale:   result[1],
-                    deadline:   this.check_deadline(Util.check_date(result[1])),
+                    deadline: datecheck.deadline,
+                    count: datecheck.count,
                     //income: result[2],
                     //seller: result[3],
                     client: client_id 
@@ -153,7 +156,7 @@ class App{
         });
 
         const orders_a = orders.reduce((acc, item) => {
-            const data = item.sale;
+            const data = item.deadline;
 
             acc[data] = acc[data] || [];
             acc[data].push(item);
@@ -176,6 +179,25 @@ class App{
         console.log(clients)
         console.log(items)
 
+        this.render(orders_b)
+
+    }
+
+    render(data){
+        const app = document.getElementById("app")
+
+        let html = ``
+
+        for (const group in data) {
+            data[group].forEach(item => {
+                html += `${item.deadline}<br/>`
+            })
+            
+        }
+
+        
+
+        app.innerHTML = html
     }
 
     check_deadline(entry){

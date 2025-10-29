@@ -1,4 +1,4 @@
-export default class DB {
+export default class IDB {
     constructor(){
         
     }
