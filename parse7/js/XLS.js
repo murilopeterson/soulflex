@@ -1,51 +1,36 @@
 export default class XLS {
-    constructor(target) {
-        this.data = null;
-        this.target = target.files[0];
-        this.read();
+    constructor(inputElement) {
+        this.file = inputElement.files[0];
     }
 
-    read() {
+    async read() {
+        const buffer = await this._readFile(this.file);
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const sheet = this._firstSheet(workbook);
+        return this._toJson(sheet);
+    }
+
+    _handleInput(){
+        
+    }
+
+    _readFile(file) {
         return new Promise((resolve, reject) => {
-            const file = this.target;
             const reader = new FileReader();
-
-            reader.onload = (e) => {
-                try {
-
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-
-                    const firstSheet = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheet];
-
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-                    this.parse(jsonData);
-                    resolve(this.data);
-
-                } catch (error) {
-                    reject(error);
-                }
-            };
-
+            reader.onload = e => resolve(new Uint8Array(e.target.result));
             reader.onerror = () => reject(reader.error);
-
             reader.readAsArrayBuffer(file);
         });
     }
 
-    parse(json) {
-
-        this.data = json.map(obj => ({
-            row: Object.values(obj)
-        }));
-        
+    _firstSheet(workbook) {
+        const name = workbook.SheetNames[0];
+        return workbook.Sheets[name];
     }
 
-    getData() {
-        return this.data;
+    _toJson(sheet) {
+        const json = XLSX.utils.sheet_to_json(sheet);
+        return json.map(row => ({ row: Object.values(row) }));
     }
-
 }
 

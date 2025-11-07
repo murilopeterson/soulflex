@@ -365,64 +365,302 @@ const CLIENTS_DATA = [
     }
 ]
 
+class InputReader{
+    constructor(input, callback){
+        this.input = document.getElementById(input)
+        this.callback = callback
 
-class App{
-    constructor(){
-        this.data       = null
-        this.orders     = []
-        //this.list   = new OrderList()
-
-        document.getElementById('file').addEventListener('change', async function (event) {
-
-            const xls = new XLS(event.target);
+        this.input.addEventListener('change', async (event) => {
+            const xls = new XLS(event.target)
             try {
-                await xls.read();
-                this.data = xls.getData();
-                this.init();
+                const data = await xls.read()
+                this.callback(data)
+                
             } catch (error) {
-                console.error('Error reading file:', error);
-            }
-
-        }.bind(this));
-
-    }
-
-    init(){
-        
-        if(this.data){
-            if(Util.checkString(this.get_title(),"RELAÇÃO")){
-                this.set_obs()
-            }
-
-            if(Util.checkString(this.get_title(),"Relatório")){
-                this.set_report()
-            }
-        }        
-     
-    }
-
-    get_title(){
-        return this.data.slice(0, 1)[0].row[0]
-    }
-
-    set_obs(){
-
-        const data = this.data.slice(2);
-
-        data.forEach(item => {
-
-            const row = item.row
-
-            if (Util.checkString(row[0], "PEDIDO")) {
-                if(row[1].replace('Obs: ', '').trim() !== ''){
-                   this.orders.push(row[1].replace('Obs: ', '').trim())
-                }
+                console.error('Erro ao ler arquivo:', error)
+                this.callback(null)
+            } finally {
+                this.input.value = ''
             }
         })
+    }
+}
+
+class Header{
+    constructor(data){
+        this.title = data?.[0]?.row?.[0] ?? ''
+    }
+
+    contains(text) {
+        return Util.checkString(this.title, text)
+    }
+}
+
+class OrderParser{
+    constructor(string) {
+        this.output = string;
+    }
+
+    parse() {
+        const [pt1, pt2] = this.splitByClient();
+        const valuesPt1  = this.extractKeyValues(pt1);
+        const valuesPt2  = this.extractKeyValues(pt2);
+
+        const keys = ["pedido", "venda", "faturado", "vendedor", "cliente"];
+        const values = [...valuesPt1, ...valuesPt2];
+
+        return Object.fromEntries(keys.map((key, i) => [key, values[i]]));;
+    }
+
+    splitByClient() {
+        const regexSplit = /^(.*?)(\s*Cliente\s*:.*)$/;
+        const match = this.output.match(regexSplit);
+
+        if (!match) return [this.output, ""];
+
+        const firstPart  = match[1].trim();
+        const secondPart = match[2].trim();
+
+        return [firstPart, secondPart];
+    }
+
+    extractKeyValues(textPart) {
+        const regexKeyValue = /(\w+(?:\s+\w+)?):\s*([^:]*?)(?=\s*(?:\w+(?:\s+\w+)?:(?:\s|$)|$))/g;
+        const result = [];
+
+        for (const match of textPart.matchAll(regexKeyValue)) {
+            const value = match[2].trim();
+            result.push(value);
+        }
+
+        return result;
+    }
+}
+
+class ItemParse{
+    constructor(data){
+
+    }
+    parse(){
+
+    }
+}
+
+class RowParse{
+    constructor(input){
+        this.cells = { first: input[0], second: input[1], third: input[2] }
+        this.output = []
+    }
+    parse(){
+        if(this.isOrder){
+            const order ={
+
+
+            }
+            return order
+        }
+    }
+
+    isOrder(){
+        return Util.checkString(this.cells.first, "PEDIDO")
+    }
+    
+    isItem(){
+        const isNumber = value => typeof value === "number" && !isNaN(value);
+        return (isNumber(this.cells.first) && isNumber(this.cells.third))
+    }
+
+    get observation() {
+        return this.cells.second.replace(/^Obs:\s*/i, '').trim()
+    }
+
+    hasObservation(){
+        return this.observation !== ''
+    }
+
+
+}
+
+class OrderRow {
+    constructor(input) {
+
+        this.cells = { first: input[0], second: input[1], third: input[2] }
+        //console.log(this.cells.first, this.cells.second, this.cells.third)
+        
+        if(!this.cells.second)
+            this.result = new OrderParser(this.cells.first).parse()
+    }
+
+    isOrder() {
+        return Util.checkString(this.cells.first, "PEDIDO")
+    }
+
+    get order() {
+        if(this.cells.second){
+            const match = this.cells.first.match(/N[º°]\s*(\d+)/i)
+            return match ? match[1] : null
+        }
+        return this.result.pedido
+    }
+
+    get client() {
+        if(this.cells.second){
+            const match = this.cells.first.match(/-\s*(.+)$/)
+            return match ? match[1].trim() : null
+        }
+        return this.result.cliente
+    }
+
+    get observation() {
+        return this.cells.second.replace(/^Obs:\s*/i, '').trim()
+    }
+
+    hasObservation() {
+        return this.observation !== ''
+    }
+}
+
+class OrderProcessor {
+    constructor() {
+
+/*         this.orderFactory = orderFactory;
+        this.itemFactory = itemFactory; */
+        this.orders = [];
+        this.current = null;
+    }
+
+    processRow(input) {
+        const parser = new OrderParser(input);
+        const result = parser.output.result
+
+        console.log(result)
+        if (input.isOrder()) {
+            /* const values = parser.extractKeyValues(); */
+            
+            
+            /* const client = this.clientRepo.getOrCreate(values[4]);
+            const order = this.orderFactory.create(values, client); */
+
+            const order = {
+                    op:     result.pedido,
+                    sale:   result.venda,
+                    deadline: "",
+                    //count: datecheck.count,
+                    //income: result[2],
+                    seller: result.vendedor,
+                    client: result.cliente,
+                }
+
+                this.current = order.op
+                //this.orders.push(order)
+        } 
+        else if (this.current) { 
+            const item = {
+                        op:    this.current,
+                        
+                       /*  id:    row[0],
+                        model: model,
+                        size:  size,
+                        cloth: cloth, */
+                        //item: row[1],
+                        /* qty:   row[2] */
+                    }
+                    this.orders.push(item)
+        }
+
+        
+    }
+}
+
+class App{
+
+    constructor(){
+        
+        this.file = new InputReader("file", this.onFileChange.bind(this))
+        this.onFileChange()
+    }
+
+    onFileChange(data) {
+        if (!data) return
+        
+        const header = new Header(data)
+
+        if (header.contains("RELAÇÃO")) {
+            this.handleObservationReport(data)
+            return
+        }
+
+        if (header.contains("Relatório")) {
+            this.handleStandardReport(data)
+        }
+    }
+
+    handleObservationReport(data){
+
+        const rows = data.slice(4).map(item => new OrderRow(item.row))
+        //console.log(rows)
+
+        rows
+            .filter(row => row.isOrder() && row.hasObservation())
+            .forEach(row => {
+                console.log({
+                    pedido: Number(row.order),
+                    observacao: row.observation
+                })
+            })
 
     }
 
-    set_report(){
+    handleStandardReport(data){
+
+        const rows = data.slice(2).map(item => new OrderRow(item.row))
+        const rowz = data.slice(2).map(item => new RowParse(item.row))
+
+        const orderz = rowz
+            .filter(row => row.isItem())
+            .forEach(row => {
+               console.log(row)
+            })
+       /*  const processor = new OrderProcessor();
+        rows.forEach(r => processor.processRow(r)); */
+        
+        //console.log(processor.orders)
+        const orders = rows
+            .filter(row => row.isOrder())
+            .forEach(row => {
+               /*  console.log({
+                    pedido: row.order,
+                    //venda: row.observation,
+                    //vendedor: row.seller,
+                    cliente: row.client
+                }) */
+            })
+        
+        const items = rows
+            .filter(row => row.isOrder(false))
+            .forEach(row => {
+                /* console.log({
+                    pedido: row.order,
+                    //venda: row.observation,
+                    //vendedor: row.seller,
+                    cliente: row.client
+                }) */
+            })
+        
+    }
+    aa(data){
+
+        const rows = data.slice(2).map(item => new OrderRow(item.row))
+
+        rows
+            .filter(row => row.isOrder())
+            .forEach(row => {
+                console.log({
+                    row
+                })
+            })
+        
+        
         
         const orders  = []
         const items   = []

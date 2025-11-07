@@ -1,10 +1,17 @@
 export default class Util{
     constructor(){}
     static checkString(a, b) {
-        if (typeof b !== "string" || b === "") return false;
+        
+        if (!b) return false;
+
+        if (Array.isArray(b)) {
+            return b.some(word => this.checkString(a, word));
+        }
+
+        if (typeof b !== "string") return false;
 
         if (typeof a === "string") {
-            return a.includes(b);
+            return a.toLowerCase().includes(b.toLowerCase());
         }
 
         if (typeof a === "number" && !isNaN(a)) {
@@ -12,11 +19,11 @@ export default class Util{
         }
 
         if (Array.isArray(a)) {
-            return a.some(item => checkString(item, b));
+            return a.some(item => this.checkString(item, b));
         }
 
         if (typeof a === "object" && a !== null) {
-            return Object.values(a).some(value => checkString(value, b));
+            return Object.values(a).some(value => this.checkString(value, b));
         }
 
         return false;
