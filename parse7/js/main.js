@@ -371,6 +371,8 @@ class InputReader{
         this.callback = callback
 
         this.input.addEventListener('change', async (event) => {
+            event.preventDefault()
+
             const xls = new XLS(event.target)
             try {
                 const data = await xls.read()
@@ -396,12 +398,26 @@ class Header{
     }
 }
 
-class OrderParser{
-    constructor(string) {
-        this.output = string;
+class Row{
+    constructor(input){
+        this.cells = { first: input[0], second: input[1], third: input[2] }
+    }
+    
+
+    isOrder(){
+        return Util.checkString(this.cells.first, "PEDIDO")
+    }
+    
+    isItem(){
+        const isNumber = value => typeof value === "number" && !isNaN(value);
+        return (isNumber(this.cells.first) && isNumber(this.cells.third))
     }
 
-    parse() {
+    parseOrder(){
+
+        if(!this.isOrder)
+            return 
+
         const [pt1, pt2] = this.splitByClient();
         const valuesPt1  = this.extractKeyValues(pt1);
         const valuesPt2  = this.extractKeyValues(pt2);
@@ -412,9 +428,9 @@ class OrderParser{
         return Object.fromEntries(keys.map((key, i) => [key, values[i]]));;
     }
 
-    splitByClient() {
+    splitByClient(){
         const regexSplit = /^(.*?)(\s*Cliente\s*:.*)$/;
-        const match = this.output.match(regexSplit);
+        const match = this.cells.first.match(regexSplit);
 
         if (!match) return [this.output, ""];
 
@@ -424,51 +440,48 @@ class OrderParser{
         return [firstPart, secondPart];
     }
 
-    extractKeyValues(textPart) {
-        const regexKeyValue = /(\w+(?:\s+\w+)?):\s*([^:]*?)(?=\s*(?:\w+(?:\s+\w+)?:(?:\s|$)|$))/g;
+    extractKeyValues(string) {
+        const regex = /(\w+(?:\s+\w+)?):\s*([^:]*?)(?=\s*(?:\w+(?:\s+\w+)?:(?:\s|$)|$))/g;
         const result = [];
 
-        for (const match of textPart.matchAll(regexKeyValue)) {
+        for (const match of string.matchAll(regex)) {
             const value = match[2].trim();
             result.push(value);
         }
 
         return result;
     }
-}
 
-class ItemParse{
-    constructor(data){
-
+    get product(){
+        return {item:this.cells.second, qty: this.cells.third}
     }
-    parse(){
 
-    }
-}
+    get order() {
 
-class RowParse{
-    constructor(input){
-        this.cells = { first: input[0], second: input[1], third: input[2] }
-        this.output = []
-    }
-    parse(){
-        if(this.isOrder){
-            const order ={
-
-
-            }
-            return order
+        if(this.cells.second){
+            const match = this.cells.first.match(/N[º°]\s*(\d+)/i)
+            return match ? match[1] : null
         }
+
+        return this.parseOrder().pedido
     }
 
-    isOrder(){
-        return Util.checkString(this.cells.first, "PEDIDO")
+    get salesman(){
+        return this.parseOrder().vendedor
     }
-    
-    isItem(){
-        const isNumber = value => typeof value === "number" && !isNaN(value);
-        return (isNumber(this.cells.first) && isNumber(this.cells.third))
+
+    get sale_date(){
+        return this.parseOrder().venda
     }
+
+    get income_date(){
+        return this.parseOrder().faturado
+    }
+
+    get client(){
+        return this.parseOrder().cliente
+    }
+
 
     get observation() {
         return this.cells.second.replace(/^Obs:\s*/i, '').trim()
@@ -481,91 +494,161 @@ class RowParse{
 
 }
 
-class OrderRow {
-    constructor(input) {
-
-        this.cells = { first: input[0], second: input[1], third: input[2] }
-        //console.log(this.cells.first, this.cells.second, this.cells.third)
-        
-        if(!this.cells.second)
-            this.result = new OrderParser(this.cells.first).parse()
+class ClientRepository{
+    constructor(){
+        this.clients = []
+        this.next_id = 0
     }
+    add(client){
+        let client_id = null
 
-    isOrder() {
-        return Util.checkString(this.cells.first, "PEDIDO")
-    }
+        const existing_pair = this.clients.find(pair => pair.client === client);
 
-    get order() {
-        if(this.cells.second){
-            const match = this.cells.first.match(/N[º°]\s*(\d+)/i)
-            return match ? match[1] : null
+        if (existing_pair) {
+            client_id = existing_pair.id
+            //route = existing_pair.route
+        } else {
+            client_id = this.next_id;
+            const set = {
+                id: this.next_id,
+                client: client,
+                route: "",
+                ranting: ""
+            }
+
+            this.clients.push(set)
+            this.next_id++;
         }
-        return this.result.pedido
-    }
 
-    get client() {
-        if(this.cells.second){
-            const match = this.cells.first.match(/-\s*(.+)$/)
-            return match ? match[1].trim() : null
-        }
-        return this.result.cliente
-    }
-
-    get observation() {
-        return this.cells.second.replace(/^Obs:\s*/i, '').trim()
-    }
-
-    hasObservation() {
-        return this.observation !== ''
+        return client_id
     }
 }
 
-class OrderProcessor {
-    constructor() {
-
-/*         this.orderFactory = orderFactory;
-        this.itemFactory = itemFactory; */
-        this.orders = [];
-        this.current = null;
+class Orders{
+    constructor(){
+        this.data = []
     }
 
-    processRow(input) {
-        const parser = new OrderParser(input);
-        const result = parser.output.result
+    add(order){
+        this.data.push(order)
+    }
 
-        console.log(result)
-        if (input.isOrder()) {
-            /* const values = parser.extractKeyValues(); */
-            
-            
-            /* const client = this.clientRepo.getOrCreate(values[4]);
-            const order = this.orderFactory.create(values, client); */
+    getItem(op) {
+        return this.data.find(item => item.op === op);
+    }
 
-            const order = {
-                    op:     result.pedido,
-                    sale:   result.venda,
-                    deadline: "",
-                    //count: datecheck.count,
-                    //income: result[2],
-                    seller: result.vendedor,
-                    client: result.cliente,
+    getItemOp(op) {
+        return this.data.findIndex(item => item.op === op);
+    }
+
+}
+
+class Items{
+    constructor(){
+        this.data = []
+        this.models = []
+        this.next_id = 0
+    }
+
+    add(model){
+        let model_id = null
+        model = model.item
+        const existing_pair = this.models.find(pair => pair.model === model);
+
+        if (existing_pair) {
+            model_id = existing_pair.id
+            //route = existing_pair.route
+        } else {
+            model_id = this.next_id;
+            const set = {
+                id: this.next_id,
+                model: model
+            }
+
+            this.models.push(set)
+            this.next_id++;
+        }
+
+        return model_id
+    }
+
+    allocate() {
+        const montadores = ["Andre", "Franscico", "Dionato", "Jeremias"];
+        const itens = this.data
+        const distribuicao = {};
+        const totais = {};
+
+        // Inicializa
+        montadores.forEach(m => {
+            distribuicao[m] = [];
+            totais[m] = 0;
+        });
+
+        // Distribuição item a item
+        itens.forEach(({ item, qty }) => {
+            const base = Math.floor(qty / montadores.length);
+            let resto = qty % montadores.length;
+
+            // Passo 1: dar a parte base igual a todos
+            montadores.forEach(m => {
+                if (base > 0) {
+                    distribuicao[m].push({ item, qty: base });
+                    totais[m] += base;
+                }
+            });
+
+            // Passo 2: distribuir o resto para quem tem menos total
+            while (resto > 0) {
+                // ordena os montadores por total atual (menos peças primeiro)
+                const menosCarregados = [...montadores].sort((a, b) => totais[a] - totais[b]);
+                const escolhido = menosCarregados[0];
+
+                // verifica se o montador já tem o item
+                const existente = distribuicao[escolhido].find(i => i.item === item);
+                if (existente) {
+                    existente.qty++;
+                } else {
+                    distribuicao[escolhido].push({ item, qty: 1 });
                 }
 
-                this.current = order.op
-                //this.orders.push(order)
-        } 
-        else if (this.current) { 
-            const item = {
-                        op:    this.current,
-                        
-                       /*  id:    row[0],
-                        model: model,
-                        size:  size,
-                        cloth: cloth, */
-                        //item: row[1],
-                        /* qty:   row[2] */
-                    }
-                    this.orders.push(item)
+                totais[escolhido]++;
+                resto--;
+            }
+        });
+
+        return { distribuicao, totais };
+
+    }
+    
+}
+
+class Item{
+    constructor(model){
+        this.model = model
+    }
+}
+
+class Processor{
+    constructor(){
+        this.clients = new ClientRepository()
+        this.items   = new Items()
+        this.orders  = []
+
+        this.current = null
+    }
+    row(input){
+        const row = new Row(input)
+        
+        if(row.isOrder()){
+            this.current = row.order;
+            //this.items[this.current] = []
+            
+            this.orders[this.current] = {client:this.clients.add(row.client), sale:row.sale_date}
+            
+
+        }
+        else if(this.current){
+            this.items.add(new Item(row.product.item))
         }
 
         
@@ -575,7 +658,7 @@ class OrderProcessor {
 class App{
 
     constructor(){
-        
+        this.orders = []
         this.file = new InputReader("file", this.onFileChange.bind(this))
         this.onFileChange()
     }
@@ -597,341 +680,51 @@ class App{
 
     handleObservationReport(data){
 
-        const rows = data.slice(4).map(item => new OrderRow(item.row))
-        //console.log(rows)
+        const rows = data.slice(4).map(item => new Row(item.row))
 
         rows
             .filter(row => row.isOrder() && row.hasObservation())
             .forEach(row => {
-                console.log({
-                    pedido: Number(row.order),
-                    observacao: row.observation
-                })
+                if(!this.orders[row.order]) this.orders[row.order] = []
+                Object.assign(this.orders[row.order], { obs: row.observation });
             })
-
+        
+        console.log(this.orders)
     }
 
     handleStandardReport(data){
-
-        const rows = data.slice(2).map(item => new OrderRow(item.row))
-        const rowz = data.slice(2).map(item => new RowParse(item.row))
-
-        const orderz = rowz
-            .filter(row => row.isItem())
-            .forEach(row => {
-               console.log(row)
-            })
-       /*  const processor = new OrderProcessor();
-        rows.forEach(r => processor.processRow(r)); */
         
-        //console.log(processor.orders)
-        const orders = rows
-            .filter(row => row.isOrder())
-            .forEach(row => {
-               /*  console.log({
-                    pedido: row.order,
-                    //venda: row.observation,
-                    //vendedor: row.seller,
-                    cliente: row.client
-                }) */
-            })
-        
-        const items = rows
-            .filter(row => row.isOrder(false))
-            .forEach(row => {
-                /* console.log({
-                    pedido: row.order,
-                    //venda: row.observation,
-                    //vendedor: row.seller,
-                    cliente: row.client
-                }) */
-            })
-        
-    }
-    aa(data){
+        const clients = new ClientRepository()
+        const models = new Items()
 
-        const rows = data.slice(2).map(item => new OrderRow(item.row))
+        let current = null
+
+        const rows = data.slice(2).map(item => new Row(item.row))
 
         rows
-            .filter(row => row.isOrder())
+            //.filter(row => row.isOrder() )
             .forEach(row => {
-                console.log({
-                    row
-                })
-            })
-        
-        
-        
-        const orders  = []
-        const items   = []
-        const clients = []
-
-        let current   = null
-        let client_id = null 
-
-        let next_id   = 1
-
-        this.data.forEach(item => {
-
-               
-
-            const row = item.row
-
-            if (Util.checkString(row[0], "Pedido")){
-                const regexSplit = /^(.*?)(\s*Cliente\s*:.*)$/;
-                const match = row[0].match(regexSplit);
-                
-                const pt1 = match[1].trim();
-                const pt2 = match[2].trim();
-
-                const regexKeyValue = /(\w+(?:\s+\w+)?):\s*([^:]*?)(?=\s*(?:\w+(?:\s+\w+)?:(?:\s|$)|$))/g;
-                const result = [];
-                
-                const matchesPt1 = pt1.matchAll(regexKeyValue);
-                for (const match of matchesPt1) {
-                    result.push(match[2].trim());
+                if(row.isOrder()){
+                    if(!this.orders[row.order]) this.orders[row.order] = []
+                    Object.assign(this.orders[row.order], { items: [], client: clients.add(row.client)});
+                    current = row.order
                 }
-
-                const matchesPt2 = pt2.matchAll(regexKeyValue);
-                for (const match of matchesPt2) {
-                    result.push(match[2].trim());
+                if(row.isItem()){
+                    models.add(row.product)
+                    this.orders[current].items.push(row.product)
                 }
-
-                const existing_pair = CLIENTS_DATA.find(pair => pair.client === result[4]);
-                let route = ""
-                if (existing_pair) {
-                    client_id = existing_pair.id
-                    route = existing_pair.route
-                } else {
-                    client_id = next_id;
-                    const set = {
-                        id: next_id,
-                        client: result[4],
-                        route: "",
-                        ranting: ""
-                    }
-
-                    clients.push(set);
-                    next_id++;
-                }
-
-
-                const order = {
-                    op:     Number(result[0]),
-                    sale:   result[1],
-                    deadline: "",
-                    //count: datecheck.count,
-                    //income: result[2],
-                    //seller: result[3],
-                    client: client_id,
-                    route: route
-                }
-
-                current = order.op
-                orders.push(order)
-
-            }
-            else{
-                if(current){
-                    const normalizedStr = row[1].replace(/\s+/g, ' ').trim();
-
-                    const sizeRegx = /\d+[xX]\d+(?:\s*[xX]\d+)?/;
-                    const sizeMatch = normalizedStr.match(sizeRegx);
-                    const size = sizeMatch ? sizeMatch[0].replace(/\s*([xX])\s*/g, '$1').toUpperCase() : "";
-
-                    const sizeIndex = sizeMatch ? normalizedStr.indexOf(sizeMatch[0]) : normalizedStr.length;
-
-                    const model = normalizedStr.slice(0, sizeIndex).trim().replace(/\s+/g, ' ').trim() || "";
-
-                    const cloth = sizeMatch ? normalizedStr.slice(sizeIndex + sizeMatch[0].length).trim() || "N/A" : "N/A";
-
-                    let quee_time = 7
-
-                    const specials  = ["DIAMANTE","BAU", "BICAMA"]
-                    const extra     = ["ELETRONICO"]
-
-                    if(specials.some(p => model.includes(p))){
-                        quee_time = 14
-                    }
-                    if(extra.some(p => model.includes(p))){
-                        quee_time = 21
-                    }
-
-                    let index = orders.findIndex(order => order.op === current);
-                    if(orders[index].deadline == "" || quee_time != 7){
-                        
-                        if (index !== -1) {
-                            orders[index].deadline = this.check_deadline(Util.check_date(orders[index].sale),quee_time).deadline;
-                        }
-                    }
-                        
-                    const item = {
-                        op:    current,
-                        id:    row[0],
-                        model: model,
-                        size:  size,
-                        cloth: cloth,
-                        //item: row[1],
-                        qty:   row[2]
-                    }
-                    items.push(item)
-                }              
-            }
-
-        });
-
-        const by_route = orders.reduce((acc, item) => {
-            const data = item.route;
-
-            acc[data] = acc[data] || [];
-            acc[data].push(item);
-            return acc;
-        }, {});
-
-        const groups = [];
-        let currentGroup = [];
-        let currentSum = 0;
-
-        for (const item of items) {
-            if (currentSum + item.qty > 14) {
-                groups.push(currentGroup);
-                currentGroup = [];
-                currentSum = 0;
-            }
-
-            currentGroup.push(item);
-            currentSum += item.qty;
-        }
-
-        if (currentGroup.length > 0) {
-            groups.push(currentGroup);
-        }
-
-        console.log(groups)
-
-        const by_op = items.reduce((acc, item) => {
-            const data = item.op;
-
-            acc[data] = acc[data] || [];
-            acc[data].push(item);
-            return acc;
-        }, {});
-
-        const orders_b = Object.entries(by_route)
-            .sort((a, b) => {
-                const [diaA, mesA, anoA] = a[0].split("/").map(Number);
-                const [diaB, mesB, anoB] = b[0].split("/").map(Number);
-                return new Date(anoA, mesA - 1, diaA) - new Date(anoB, mesB - 1, diaB);
-                })
-            .reduce((acc, [data, itens]) => {
-            acc[data] = itens;
-            return acc;
-        }, {});
-
-        //console.log(by_route)
-        const quee = {}
-        for(const order in by_route){
-            
-            
-            by_route[order]
-                .sort((a, b) => a.client - b.client)
-                .forEach(item =>{
-                    if(!quee[order]) quee[order] = []
-                    quee[order].push(by_op[item.op])
-                    /* const obj = CLIENTS_DATA.find(pair => pair.id === item.client)
-                    if(!quee[obj.client]) quee[obj.client] = []
-                    quee[obj.client].push(by_op[item.op]) */
             })
 
-            
-            
-        }
-        console.log(quee)
-        /* console.log(orders_b)
-        console.log(clients) */
-        //console.log(items)
-//CLIENTS_DATA.find(pair => pair.client === result[4])
-        //this.render(orders_b)
+        console.log(models)
+        /* const process = new Processor();
+        data.slice(2).forEach(r => process.row(r.row));
+        process.items.data.forEach(row => {
+            this.orders.add([row.model])
+        })
+        console.log(this.orders) */
 
     }
-
-    grouping(items, maxPerGroup = 14) {
-        const groups = [];
-        let currentGroup = [];
-        let currentSum = 0;
-
-        for (const item of items) {
-            if (currentSum + item.qty > maxPerGroup) {
-                groups.push(currentGroup);
-                currentGroup = [];
-                currentSum = 0;
-            }
-
-            currentGroup.push(item);
-            currentSum += item.qty;
-        }
-
-        if (currentGroup.length > 0) {
-            groups.push(currentGroup);
-        }
-
-        return groups;
-    }
-
-    render(data){
-        const app = document.getElementById("app")
-
-        let html = ``
-
-        for (const group in data) {
-            data[group].forEach(item => {
-                html += `${item.deadline}<br/>`
-            })
-            
-        }
-
-        
-
-        app.innerHTML = html
-    }
-
-    check_deadline(entry, quee_time){
-        let workingDays = 0;
-        let deadline = new Date(entry);
-
-        while (workingDays < quee_time) {
-            deadline.setDate(deadline.getDate() + 1);
-            
-            if (this.check_holiday(deadline)) {
-                workingDays++;
-            }
-        }
-
-        const diffInMs   = new Date(deadline) - new Date()
-        const diffInDays = diffInMs / (1000 * 60 * 60 * 24)
-
-        return {count:Math.round(diffInDays),deadline:deadline.toLocaleDateString()};
-    }
-
-    check_holiday(date){
-        const weekday = date.getDay();
-        const formatedDate = date.toISOString().slice(5, 10);
-        const holidays = [
-                        "01-01","03-04",
-                        "04-18","04-21",
-                        "05-01","05-24",
-                        "06-19","07-26",
-                        "09-07","10-12",
-                        "10-24","10-28",
-                        "11-02","11-15",
-                        "11-20","12-25"
-                    ];
-        return weekday !== 0 && weekday !== 6 && !holidays.includes(formatedDate);
-    }
-
+   
 }
 
 new App
-
-
-

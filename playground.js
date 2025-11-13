@@ -33,3 +33,22 @@
         
         // Adicionar tabela ao container
         container.appendChild(tabela);
+
+
+
+/*         cliente 1 - n pedidos
+
+        pedido 1 - n items
+
+
+        cliente(id, nome, rota, busca, pes, rank, status, obs, endereco)
+
+        pedido(id, id cliente, venda, faturado, vendedor, status, prioridade, obs)
+        
+        item(id, id pedido, caixa( tipo, tamanho, altura), roupa, classe, kit, status, obs)
+        */
+
+
+
+
+        
