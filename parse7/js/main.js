@@ -452,6 +452,38 @@ class Row{
         return result;
     }
 
+    parseItem(){
+        if(!this.isItem)
+            return
+
+        const [pt1, pt2, pt3] = this.splitDescription()
+
+        const keys = ["tamanho", "modelo", "roupa"];
+        const values = [pt1, pt2, pt3];
+        
+        return Object.fromEntries(keys.map((key, i) => [key, values[i]]));;
+        
+    }
+
+    splitDescription(){
+        const normalizedStr = this.cells.second.replaceAll(".", "").replace(/\s+/g, ' ').trim();
+
+        const sizeRegx = /\d+[xX]\d+(?:\s*[xX]\d+)?/;
+        const sizeMatch = normalizedStr.match(sizeRegx);
+        const size = sizeMatch ? sizeMatch[0].replace(/\s*([xX])\s*/g, '$1').toUpperCase() : "";
+
+        const sizeIndex = sizeMatch ? normalizedStr.indexOf(sizeMatch[0]) : normalizedStr.length;
+
+        //const type = normalizedStr.slice(0, sizeIndex).trim().replaceAll(".", "").replace(/\s+/g, ' ').trim() || "";
+        const type =    normalizedStr.slice(0, sizeIndex).trim()
+                        .replace(/\s+/g, ' ')
+                        .trim() || "";
+
+        const material = sizeMatch ? normalizedStr.slice(sizeIndex + sizeMatch[0].length).trim() || "N/A" : "N/A";
+        
+        return [size, type, material]
+    }
+
     get product(){
         return {item:this.cells.second, qty: this.cells.third}
     }
@@ -482,6 +514,49 @@ class Row{
         return this.parseOrder().cliente
     }
 
+    get model(){
+        //let model = this.parseItem().modelo
+
+        let model = this.parseItem().modelo
+                .replace("BOX BAU", 'BAU')
+                .replace("GOLD LUXO", 'LUXO')
+                .replace("BOX TATAME", 'TATAME')
+                .replace("BOX EVOLUTION", 'TATAME EVOLUTION')
+                .replace("BOX BICAMA", 'BICAMA')
+                .replace("BOX DIAMANTE TATAME", 'TATAME DIAMANTE')
+                .replace("GOLD PRIME", 'PRIME')
+                .replace("PARTIDA", 'PARTIDO')
+                .replace("CABECEIRA LISTRAS", 'LISTRAS')
+                .replace("GOLD CASHMERE", 'CASHMERE')
+                .replace("ANTIDERRAOANTE", 'ANTIDERRAPANTE')
+                .replace("ANTIDERRPANTE", 'ANTIDERRAPANTE')
+                .replace("108 COURO BEGE", '')
+                .replace("UMA LISTRA", '1 LISTRA')
+                .replace("C/", 'COM')
+                .trim()
+        
+        let material = this.parseItem().roupa
+                .replace("PP1", '')
+                .replace("PP2", '')
+                .replace("PP3", '')
+                .replace("PP4", '')
+                .replace("PP5", '')
+                .replace("SP1", '')
+                .replace("COURO", '')
+                .replace("LINHO", '')
+                .replace("FACTON", '')
+                .replace("BUCLE", 'BOUCLE')
+                .replace("BUOCLE", 'BOUCLE')
+                .replace("BOUCLE", '')
+                .replace("CHOCOLTE", 'CHOCOLATE')
+                .trim()
+
+        let [type, ...feature] = model.split(" ");
+        const result = []
+        Object.assign(result, { type, feature:feature[0], extra: feature.join(' ').split("DIAMANTE ")[1] || "" });
+        //return [type, feature[0] || "", feature.join(' ').split("DIAMANTE ")[1] || ""]
+        return material
+    }
 
     get observation() {
         return this.cells.second.replace(/^Obs:\s*/i, '').trim()
@@ -552,7 +627,7 @@ class Items{
 
     add(model){
         let model_id = null
-        model = model.item
+        //model = model.item
         const existing_pair = this.models.find(pair => pair.model === model);
 
         if (existing_pair) {
@@ -710,8 +785,9 @@ class App{
                     current = row.order
                 }
                 if(row.isItem()){
-                    models.add(row.product)
+                    models.add(row.model)
                     this.orders[current].items.push(row.product)
+                    //row.model
                 }
             })
 
