@@ -518,6 +518,8 @@ class Row{
         //let model = this.parseItem().modelo
 
         let model = this.parseItem().modelo
+                .replace("108 COURO BEGE", 'ZZZ')
+
                 .replace("BOX BAU", 'BAU')
                 .replace("GOLD LUXO", 'LUXO')
                 .replace("BOX TATAME", 'TATAME')
@@ -530,24 +532,34 @@ class Row{
                 .replace("GOLD CASHMERE", 'CASHMERE')
                 .replace("ANTIDERRAOANTE", 'ANTIDERRAPANTE')
                 .replace("ANTIDERRPANTE", 'ANTIDERRAPANTE')
-                .replace("108 COURO BEGE", '')
                 .replace("UMA LISTRA", '1 LISTRA')
                 .replace("C/", 'COM')
+
+                .replace("BOX ",'')
+                .replace("GRAN PARTIDO", 'BOX PARTIDO')
+                .replace("GRAN",'')
+                .replace("GOLD",'')
+                .replace("LISTRAS",'')
+                .replace("1 LISTRA",'')
+                .replace("LISA",'')
+                //.replace("BOX",'')
                 .trim()
         
         let material = this.parseItem().roupa
-                .replace("PP1", '')
+                /* .replace("PP1", '')
                 .replace("PP2", '')
                 .replace("PP3", '')
                 .replace("PP4", '')
                 .replace("PP5", '')
                 .replace("SP1", '')
                 .replace("COURO", '')
-                .replace("LINHO", '')
-                .replace("FACTON", '')
+                .replace("LINHO", '') */
+                .replace("FACTOR", 'FACTO')
+                .replace("FACTON", 'FACTO')
                 .replace("BUCLE", 'BOUCLE')
                 .replace("BUOCLE", 'BOUCLE')
-                .replace("BOUCLE", '')
+                .replace("BOUCLE ALASKA", 'ALASKA')
+                //.replace("BOUCLE", '')
                 .replace("CHOCOLTE", 'CHOCOLATE')
                 .trim()
 
@@ -555,7 +567,10 @@ class Row{
         const result = []
         Object.assign(result, { type, feature:feature[0], extra: feature.join(' ').split("DIAMANTE ")[1] || "" });
         //return [type, feature[0] || "", feature.join(' ').split("DIAMANTE ")[1] || ""]
-        return material
+
+        if(model.includes("ZZZ")) return null
+
+        return ((model || "BOX") +" "+ this.parseItem().tamanho ).replace(/\s+/g, " ")
     }
 
     get observation() {
@@ -771,7 +786,7 @@ class App{
         
         const clients = new ClientRepository()
         const models = new Items()
-
+        const all = []
         let current = null
 
         const rows = data.slice(2).map(item => new Row(item.row))
@@ -785,19 +800,28 @@ class App{
                     current = row.order
                 }
                 if(row.isItem()){
-                    models.add(row.model)
+                    all.push({item:row.model,qty:row.product.qty})
                     this.orders[current].items.push(row.product)
                     //row.model
                 }
             })
 
-        console.log(models)
+        
+        const res = Object.values(
+            all.reduce((a, { item, qty }) => {
+                if (item == null) return a;
+                a[item] = a[item] || { item, qty: 0 };
+                a[item].qty += qty;
+                return a;
+                }, {})
+            );
+        console.log(res.sort((a, b) => a.item.localeCompare(b.item)))
         /* const process = new Processor();
         data.slice(2).forEach(r => process.row(r.row));
         process.items.data.forEach(row => {
             this.orders.add([row.model])
-        })
-        console.log(this.orders) */
+        })*/
+        console.log(this.orders) 
 
     }
    
