@@ -39,91 +39,47 @@ class Row{
     constructor(input){
         this.data = input
     }
-    
 
     isOrder(){
-        return Util.checkString(this.data[0], "PEDIDO:")
+        return Util.checkString(this.data[0],"PEDIDO:") && Util.checkString(this.data[0],"VENDA:")
+    }
+
+    isItem(){
+        return this.data.length === 5 && Number.isInteger(this.data[0])
+    }
+
+    isPayment(){
+        return this.data.length === 4 && Util.checkString(this.data[3],"VALOR")
+    }
+
+    isPaid(){
+        return this.orderParse().income != null
+    }
+
+    isObs(){
+        return this.data
     }
     
-    isItem(){
-        const isNumber = value => typeof value === "number" && !isNaN(value);
-        return (isNumber(this.cells.first) && isNumber(this.cells.third))
-    }
+    orderParse(){
 
-    parseKeyValue(text) {
-        const result = {};
+        const values = [];
 
-        // captura a chave e tudo até a próxima chave ou fim
         const regex = /([\wÀ-ÿ\.\º]+)\s*:\s*([^:]*?)(?=\s+\w[\wÀ-ÿ\.\º]*\s*:|$)/g;
 
         let match;
-        while (match = regex.exec(text)) {
-            const key = match[1].trim();
-            let value = match[2].trim();
-
-            // se não existe valor ou é só espaços
-            if (value === "") value = null;
-
-            result[key] = value;
-        }
-
-        return result;
-    }
-
-    parseOrder(){
-
-        if(!this.isOrder)
-            return 
-
-        const [pt1, pt2] = this.splitByClient();
-        const valuesPt1  = this.extractKeyValues(pt1);
-        const valuesPt2  = this.extractKeyValues(pt2);
-
-        const keys = ["pedido", "venda", "faturado", "vendedor", "cliente"];
-        const values = [...valuesPt1, ...valuesPt2];
-
-        return Object.fromEntries(keys.map((key, i) => [key, values[i]]));;
-    }
-
-    splitByClient(){
-        const regexSplit = /^(.*?)(\s*Cliente\s*:.*)$/;
-        const match = this.cells.first.match(regexSplit);
-
-        if (!match) return [this.output, ""];
-
-        const firstPart  = match[1].trim();
-        const secondPart = match[2].trim();
-
-        return [firstPart, secondPart];
-    }
-
-    extractKeyValues(string) {
-        const regex = /(\w+(?:\s+\w+)?):\s*([^:]*?)(?=\s*(?:\w+(?:\s+\w+)?:(?:\s|$)|$))/g;
-        const result = [];
-
-        for (const match of string.matchAll(regex)) {
+        while (match = regex.exec(this.data[0].replace("Nº",'').trim())) {
             const value = match[2].trim();
-            result.push(value);
+            values.push(value === "" ? null : value);
         }
+        
+        const keys = ["op", "sale", "income", "nfe", "vendor", "client"];
 
-        return result;
+        return Object.fromEntries(keys.map((key, i) => [key, values[i]]));
+
     }
 
-    parseItem(){
-        if(!this.isItem)
-            return
-
-        const [pt1, pt2, pt3] = this.splitDescription()
-
-        const keys = ["tamanho", "modelo", "roupa"];
-        const values = [pt1, pt2, pt3];
-        
-        return Object.fromEntries(keys.map((key, i) => [key, values[i]]));;
-        
-    }
-
-    splitDescription(){
-        const normalizedStr = this.cells.second.replaceAll(".", "").replace(/\s+/g, ' ').trim();
+    itemParse(){
+        const normalizedStr = this.data[1].replaceAll(".", "").replace(/\s+/g, ' ').trim();
 
         const sizeRegx = /\d+[xX]\d+(?:\s*[xX]\d+)?/;
         const sizeMatch = normalizedStr.match(sizeRegx);
@@ -131,124 +87,39 @@ class Row{
 
         const sizeIndex = sizeMatch ? normalizedStr.indexOf(sizeMatch[0]) : normalizedStr.length;
 
-        //const type = normalizedStr.slice(0, sizeIndex).trim().replaceAll(".", "").replace(/\s+/g, ' ').trim() || "";
         const type =    normalizedStr.slice(0, sizeIndex).trim()
                         .replace(/\s+/g, ' ')
                         .trim() || "";
-
-        const material = sizeMatch ? normalizedStr.slice(sizeIndex + sizeMatch[0].length).trim() || "N/A" : "N/A";
         
-        return [size, type, material]
+        const cloth = sizeMatch ? normalizedStr.slice(sizeIndex + sizeMatch[0].length).trim() || "N/A" : "N/A";
+     
+        
+        return { id:this.data[0], type, size, cloth, price:this.data[2], qty:this.data[3]}
     }
 
-    get product(){
-        return {item:this.cells.second, qty: this.cells.third}
+    get order(){
+        return Number(this.orderParse().op)
     }
 
-    get order() {
-
-        const result = {};
-        const str = this.data[0].replace("Nº",'')
-
-        const regex = /([\wÀ-ÿ\.\º]+)\s*:\s*([^:]*?)(?=\s+\w[\wÀ-ÿ\.\º]*\s*:|$)/g;
-
-        let match;
-        while (match = regex.exec(str)) {
-            const key = match[1].trim();
-            let value = match[2].trim();
-
-            
-            if (value === "") value = null;
-
-            result[key] = value;
-        }
-
-        return result;
+    get sale(){
+        return this.orderParse().sale //date
     }
 
-    get salesman(){
-        return this.parseOrder().vendedor
+    get income(){
+        return this.orderParse().income //date
     }
 
-    get sale_date(){
-        return this.parseOrder().venda
+    get nfe(){
+        return Number(this.orderParse().nfe)
     }
 
-    get income_date(){
-        return this.parseOrder().faturado
+    get vendor(){
+        return this.orderParse().vendor
     }
 
     get client(){
-        return this.parseOrder().cliente
+        return this.orderParse().client
     }
-
-    get model(){
-        //let model = this.parseItem().modelo
-
-        let model = this.parseItem().modelo
-                .replace("108 COURO BEGE", 'ZZZ')
-
-                .replace("BOX BAU", 'BAU')
-                .replace("GOLD LUXO", 'LUXO')
-                .replace("BOX TATAME", 'TATAME')
-                .replace("BOX EVOLUTION", 'TATAME EVOLUTION')
-                .replace("BOX BICAMA", 'BICAMA')
-                .replace("BOX DIAMANTE TATAME", 'TATAME DIAMANTE')
-                .replace("GOLD PRIME", 'PRIME')
-                .replace("PARTIDA", 'PARTIDO')
-                .replace("CABECEIRA LISTRAS", 'LISTRAS')
-                .replace("GOLD CASHMERE", 'CASHMERE')
-                .replace("ANTIDERRAOANTE", 'ANTIDERRAPANTE')
-                .replace("ANTIDERRPANTE", 'ANTIDERRAPANTE')
-                .replace("UMA LISTRA", '1 LISTRA')
-                .replace("C/", 'COM')
-
-                .replace("BOX ",'')
-                .replace("GRAN PARTIDO", 'BOX PARTIDO')
-                .replace("GRAN",'')
-                .replace("GOLD",'')
-                .replace("LISTRAS",'')
-                .replace("1 LISTRA",'')
-                .replace("LISA",'')
-                //.replace("BOX",'')
-                .trim()
-        
-        let material = this.parseItem().roupa
-                /* .replace("PP1", '')
-                .replace("PP2", '')
-                .replace("PP3", '')
-                .replace("PP4", '')
-                .replace("PP5", '')
-                .replace("SP1", '')
-                .replace("COURO", '')
-                .replace("LINHO", '') */
-                .replace("FACTOR", 'FACTO')
-                .replace("FACTON", 'FACTO')
-                .replace("BUCLE", 'BOUCLE')
-                .replace("BUOCLE", 'BOUCLE')
-                .replace("BOUCLE ALASKA", 'ALASKA')
-                //.replace("BOUCLE", '')
-                .replace("CHOCOLTE", 'CHOCOLATE')
-                .trim()
-
-        let [type, ...feature] = model.split(" ");
-        const result = []
-        Object.assign(result, { type, feature:feature[0], extra: feature.join(' ').split("DIAMANTE ")[1] || "" });
-        //return [type, feature[0] || "", feature.join(' ').split("DIAMANTE ")[1] || ""]
-
-        if(model.includes("ZZZ")) return null
-
-        return ((model || "BOX") +" "+ this.parseItem().tamanho ).replace(/\s+/g, " ")
-    }
-
-    get observation() {
-        return this.cells.second.replace(/^Obs:\s*/i, '').trim()
-    }
-
-    hasObservation(){
-        return this.observation !== ''
-    }
-
 
 }
 
@@ -272,15 +143,49 @@ class App{
 
 
     handleReport(data){
+        const obj = []
+        let current = null
 
         const rows = data.slice(2).map(item => new Row(item.row))
 
         rows
-            .filter(row => row.isOrder())
-            .forEach(item => {
-                console.log(item.order)
+            //.filter(row => row.isPaid())
+            .forEach((row, index, rows) => {
+                if(row.isOrder()){
+                    
+                    let obs = typeof rows[index+1].data[0] === "string" ? rows[index+1].data[0] : null
+                    let ref = row.data[1] ? Number(row.data[1]) : null
+
+                    current = row.order
+                    
+                    obj[current] = {
+                        sale:   row.sale,
+                        income: row.income,
+                        nfe:    row.nfe,
+                        vendor: row.vendor,
+                        client: row.client,
+                        obs,
+                        ref,
+                        items:  [],
+                        payment:[]
+
+                    }
+                    return
+
+                }
+                
+                if(current && row.isItem()){
+                    obj[current].items.push(row.itemParse())
+                    return
+                }
+
+                if(row.isPayment())
+                    obj[current].payment.push(row.data)
+                
             }
         );
+
+        console.log(obj)
 
     }
    
