@@ -141,8 +141,46 @@ class App{
         }
     }
 
+    check_deadline(entry, quee_time){
+        
+        const [d, m, y] = entry.split("/").map(Number);
+        const fullYear = y < 100 ? 2000 + y : y;
+        
+        let workingDays = 0;
+        let deadline = new Date(fullYear, m - 1, d);
 
-    handleReport(data){
+        while (workingDays < quee_time) {
+            deadline.setDate(deadline.getDate() + 1);
+            
+            if (this.check_holiday(deadline)) {
+                workingDays++;
+            }
+        }
+
+        const diffInMs   = new Date(deadline) - new Date()
+        const diffInDays = diffInMs / (1000 * 60 * 60 * 24)
+
+        return {count:Math.round(diffInDays),deadline: deadline.toLocaleDateString()};
+    }
+
+    check_holiday(date){
+
+        const weekday = date.getDay();
+        const formatedDate = date.toISOString().slice(5, 10);
+        const holidays = [
+                        "01-01","03-04",
+                        "04-18","04-21",
+                        "05-01","05-24",
+                        "06-19","07-26",
+                        "09-07","10-12",
+                        "10-24","10-28",
+                        "11-02","11-15",
+                        "11-20","12-25"
+                    ];
+        return weekday !== 0 && weekday !== 6 && !holidays.includes(formatedDate);
+    }
+
+    async handleReport(data){
         const obj = []
         let current = null
 
@@ -150,7 +188,7 @@ class App{
 
         rows
             //.filter(row => row.isPaid())
-            .forEach((row, index, rows) => {
+            .forEach(async (row, index, rows) => {
                 if(row.isOrder()){
                     
                     let obs = typeof rows[index+1].data[0] === "string" ? rows[index+1].data[0] : null
@@ -158,23 +196,50 @@ class App{
 
                     current = row.order
                     
+
                     obj[current] = {
                         sale:   row.sale,
                         income: row.income,
                         nfe:    row.nfe,
                         vendor: row.vendor,
                         client: row.client,
+                        status: null,
+                        priority: null,
+                        rank: null,
+                        deadline: "",
                         obs,
                         ref,
                         items:  [],
                         payment:[]
 
                     }
+
+                    const db = new IDB('soulflex', 'orders', 'id');
+                    await db.save({ id: current, client: row.client });
                     return
 
                 }
                 
                 if(current && row.isItem()){
+
+                    let quee_time = 7
+                    
+                    const specials  = ["DIAMANTE","BAU", "BICAMA"]
+                    const extra     = ["ELETRONICO"]
+
+                    if(specials.some(p => row.itemParse().type.includes(p))){
+                        quee_time = 14
+                    }
+                    if(extra.some(p => row.itemParse().type.includes(p))){
+                        quee_time = 21
+                    }
+                    if(obj[current].deadline == "" || quee_time != 7){
+                        obj[current].deadline = this.check_deadline(obj[current].sale,quee_time).deadline;
+                    
+                    }
+                    const db = new IDB('soulflexz', 'items', 'id');
+                    await db.save({ id:index, order: current, item: row.itemParse()});
+
                     obj[current].items.push(row.itemParse())
                     return
                 }
@@ -185,7 +250,12 @@ class App{
             }
         );
 
-        console.log(obj)
+        obj.forEach(async (order, id, object) => {
+            //console.log(obj[index])
+            /* const db = new IDB('soulflex', 'data', 'id');
+            await db.save({ id, order }); */
+        })
+        //console.log(obj)
 
     }
    
