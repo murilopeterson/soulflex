@@ -10,9 +10,6 @@ export default class XLS {
         return this._toJson(sheet);
     }
 
-    _handleInput(){
-        
-    }
 
     _readFile(file) {
         return new Promise((resolve, reject) => {
@@ -30,7 +27,8 @@ export default class XLS {
 
     _toJson(sheet) {
         const json = XLSX.utils.sheet_to_json(sheet);
-        return json.map(row => ({ row: Object.values(row) }));
+
+        return json.map(row => ( Object.values(row) ));
+
     }
 }
-
