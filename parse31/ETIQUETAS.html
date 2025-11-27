@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <title>Parse 3.2</title>
+    <link rel="stylesheet" href="style.css" media="">
+  <style>.product h2 {
+    font-size: 2rem;
+}
+
+.product h3 {
+    font-size: 2.25rem;
+}</style>
+</head>
+<body>
+
+    <header class="no-print">
+      <nav>
+        <button class="delete-button hide button" onclick="deleteSelectedOrders()">Deletar Pedidos Selecionados</button>
+        <button class="button hide" onclick="toggleCheckboxes()">Inverter Seleção</button>
+        <button class="tag-button hide button" onclick="gentag()">Gerar Etiquetas</button>
+        <button class="button hide" onclick="renderbydate()">Ordernar Por Data</button>
+        <button class="tag-button hide button" onclick="renderbyname()">Ordernar Por Nome</button>
+      </nav>
+    </header>
+    <main>
+      <div id="app"></div>
+      <label for="file" class="button button-upload"> Importar Relatório de Pendências e/ou Produção
+          <input type="file" id="file" accept=".xls" onchange="">
+      </label>
+
+      
+    </main>
+    
+    <aside class="page" id="page-print">
+        <div class="tags" id="tagGenerator">
+        
+        </div>
+    </aside>
+    
+
+    <script src="TQTAS.js"></script>
+</body>
+</html>

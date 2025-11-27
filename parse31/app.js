@@ -15,6 +15,8 @@ let heights     = []
 let clothTypes  = []
 let clothColors = []
 
+let grouped = false
+
 file.addEventListener('change', function (e) {
     readXls(e)
 })
@@ -51,6 +53,9 @@ function readXls(event) {
             //console.log(reportArr)
             
         }else if(reportArr.length !== 0){
+            btns.forEach(btn => {
+                btn.classList.toggle('hide');
+            });
             render(reportArr)
         }
         
@@ -78,7 +83,6 @@ function parseXls(json){
         reportArr = report(table)
         meta = title
         //console.log(products, sellers, customers, sizes, clothTypes, clothColors, heights)
-        console.log(products)
     }
 }
 
@@ -108,7 +112,7 @@ function request(data){
 }
 
 function report(data){
-
+    const models = []
     const obj = []
     let currentOrder = null;
 
@@ -158,8 +162,8 @@ function report(data){
         }
         else{
             if (currentOrder) {
-                
-                const normalizedStr = item.row[1].replace(/\s+/g, ' ').trim();
+                console.log(item.row[1])
+                const normalizedStr = item.row[1].replaceAll(".", "").replace(/\s+/g, ' ').trim();
 
                 const sizeRegx = /\d+[xX]\d+(?:\s*[xX]\d+)?/;
                 const sizeMatch = normalizedStr.match(sizeRegx);
@@ -172,6 +176,34 @@ function report(data){
 
                 const material = sizeMatch ? normalizedStr.slice(sizeIndex + sizeMatch[0].length).trim() || "N/A" : "N/A";
 
+
+                let newmodel = type.replace("108 COURO BEGE", 'ZZZ')
+                .replace("BOX BAU", 'BAU')
+                .replace("GOLD LUXO", 'LUXO')
+                .replace("BOX TATAME", 'TATAME')
+                .replace("BOX EVOLUTION", 'TATAME EVOLUTION')
+                .replace("BOX BICAMA", 'BICAMA')
+                .replace("BOX DIAMANTE TATAME", 'TATAME DIAMANTE')
+                .replace("GOLD PRIME", 'PRIME')
+                .replace("PARTIDA", 'PARTIDO')
+                .replace("CABECEIRA LISTRAS", 'LISTRAS')
+                .replace("GOLD CASHMERE", 'CASHMERE')
+                .replace("ANTIDERRAOANTE", 'ANTIDERRAPANTE')
+                .replace("ANTIDERRPANTE", 'ANTIDERRAPANTE')
+                .replace("UMA LISTRA", '1 LISTRA')
+                .replace("C/", 'COM')
+
+                .replace("BOX ",'')
+                .replace("GRAN PARTIDO", 'BOX PARTIDO')
+                .replace("GRAN",'')
+                .replace("GOLD",'')
+                .replace("LISTRAS",'')
+                .replace("1 LISTRA",'')
+                .replace("LISA",'')
+                //.replace("BOX",'')
+                .trim()
+
+                console.log(newmodel)
                 let parts = 1
                 let headboard = 0
                 let lid = 0
@@ -210,6 +242,7 @@ function report(data){
 
                 let newItem =  {
                     id: item.row[0],
+                    nmodel: (newmodel || "BOX"),
                     model: type,
                     //size: `${pt[0]}x${pt[1]}`,
                     size: size,
@@ -327,7 +360,7 @@ function checkdate(dateStr) {
     const end = new Date(Math.max(currentDate, inputDate));
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    if (d.getDay() % 6) businessDays++;
+        if (d.getDay() % 6) businessDays++;
     }
 
     return businessDays > 5;
@@ -335,20 +368,25 @@ function checkdate(dateStr) {
 
 function render(data){
     
-
+    const newproducts = []
     //data.sort((a, b) => a.customer.localeCompare(b.customer));
 
     const container = document.getElementById('app');
+
+    const timestamp = document.getElementById('timestamp');
+    timestamp.innerHTML = meta[1];
+
     const recent_orders = []
 
-    let html = `<small class="document-date">${meta[1]}</small>`;
+    html = ``
 
-    data.forEach((order) => {
+    data.forEach((order, i) => {
         
-        if(checkdate(order.sale_date)){
-            recent_orders.push(order)
-            return
-        }
+       
+        let pes = null
+        
+
+        newproducts.push(...order.items)
 
         let lids = 0
         let headboards = 0
@@ -362,36 +400,73 @@ function render(data){
         })
 
         
-        html += `
-            <label class="pedido-section" for="order-${order.id}">
-                <input type="checkbox" id="order-${order.id}" value="${order.id}"/>
-                <div class="checkbox-container">
-                    <div class="order-title"><h4>${order.id} - ${order.customer} </h4><small>${order.sale_date}</small></div>
-                    ${order.obs ? "<p><strong>Obs</strong>: "+ order.obs + "</p>" : ""}
-                    <p>
-                        <small class="order-details details"> 
-                            ${qtys} ${(qtys > 1) ? "camas ":"cama"}
-                            ${parts ? parts + " peça(s) " : ""}
-                            ${headboards ? headboards + " cabeceira(s) " : ""}
-                            ${lids ? lids + " tampa(s)" : ""}
-                        </small>
-                    </p>
+        html += `<label class="pedido-section item" for="order-${order.id}" draggable="true" data-id="${i}" >`;
+
+        html +=
+            `<input type="checkbox" id="order-${order.id}" value="${order.id}"/>
+            <div class="checkbox-container">
+                <div class="order-title">
+                    <h4>${order.id} - ${order.customer}</h4>
+                    <small>${order.sale_date}</small>
+                </div>
+                ${order.obs ? "<div class='order-obs'><strong>Obs</strong>: "+ order.obs + "</div>" : ""}
+                
+                <small class="order-details"> 
+                    ${qtys} ${(qtys > 1) ? "camas ":"cama"}
+                    ${parts ? parts + " peça(s) " : ""}
+                    ${headboards ? headboards + " cabeceira(s) " : ""}
+                    ${lids ? lids + " tampa(s)" : ""}
+                </small>
         `;  
-            
+            let index = 1
             order.items.forEach((item) => {
-                html += `<div>
-                    <p>
-                    ${item.qty} - ${item.model} ${item.feature || ""} ${item.size.split("x")[0]}${item.height ? "x"+item.height : ""} 
-                    ${item.cloth}
+                html += ``;
+                    if(order.customer.includes(["CALACA"]) && item.model.includes(["BOX GRAN"])){
+                        pes = "PES PRETOS"
+                    }
+
+                    if(order.customer.includes(["ARMAZEM"]) && item.model.includes(["BOX GRAN"])){
+                        pes = "PES MADEIRA"
+                    }
+
+                    if(order.customer.includes(["SONO&CIA"]) && item.feature.includes(["DIAMANTE"])){
+                        pes = "PES 12CM"
+                    }
+                    
+                    if(grouped){
+                        html += `<div class="${(index & 1)?"odd":null}">
+                                    <div class="item-qty">${item.qty}</div>
+                                    <div>${item.model} ${item.feature || ""} ${item.size.split("x")} ${item.cloth}</div>
+                                    
+                                    <div class="item-pes">${(pes)?pes:""}</div>
+                                    <div><input type="text" class="input-obs" width="150px" style="position:relative"> </input></div>
+                            </div>`
+                        index++
+                    }
+                    else{
+                        for(let i = 1; i<= item.qty; i++){
+                            html += `<div class="${(index & 1)?"odd":null}">
+                                        <div class="item-id item-extras">${order.id}</div>
+                                        <div class="item-customer item-extras">${order.customer}</div>
+                                        <div>${item.model} ${item.feature || ""} ${item.size.split("x")} ${item.cloth}</div>
+                                        
+                                        <div class="item-pes">${(pes)?pes:""}</div>
+                                        <div><input type="text" class="input-obs" width="150px" style="position:relative"> </input></div>
+                                </div>`
+                            index++
+                        
+                    }
+                    }
+                    
+                   /*  html += `
                         <!--<small class="item-details details"> 
                             ${item.parts ? item.parts * item.qty + "pç " : ""}
                             ${item.headboard ? item.headboard * item.qty + "cab " : ""}
                             ${item.lid ? item.lid * item.qty + "tamp " : ""}
                         </small>-->
-                    </p>
-                    </div>
                 
-                `;
+                `; */
+                ///index++
             })
         
         html += `</div>
@@ -400,17 +475,33 @@ function render(data){
         `;
     });
 
-    const totalByGroup = products.reduce((acc, item) => {
-        const key = `${item.type}-${item.feature}-${item.size}`;
+
+
+    const totalByGroup = newproducts.sort((a, b) => a.nmodel.localeCompare(b.nmodel)).reduce((acc, item) => {
+        const key = `${item.nmodel}-${item.size}`;
         acc[key] = (acc[key] || 0) + item.qty;
         return acc;
     }, {});
+    html += `<div class="container">`
     html += `<div class="products-total">`
+    
     Object.entries(totalByGroup).forEach(([key, qty]) => {
-        const [type, feature, size] = key.split('-');
-        html += `<p>${qty}x ${type} ${feature} ${size}</p>`;
+        const [nmodel, size] = key.split('-');
+        for(let i = 1; i<= qty; i++){
+            html += `<p class="box-item">`
+            html += `<span class="qty-count">${nmodel}</span>  ${size}`;
+            html += `</p>`
+        }
+        
     });
-    html += `</div>`
+     html += `</div>`
+    html += `<div class="products-total observations">`
+    requestArr.forEach(item =>{
+        //console.log(item)
+        html += `<p class="box-item"><span class="qty-count">${item.id}</span> ${item.obs}</p>`
+         
+    })
+    html += `</div></div>`
     
     container.innerHTML = html;
 }
@@ -420,6 +511,24 @@ function setPageSize(cssPageSize) {
     style.innerHTML = `@page {size: ${cssPageSize}}`;
     document.head.appendChild(style);
 }
+
+function gerarIdentificadoresAZ09() {
+    const ids = [];
+
+    // Códigos ASCII para 'A' (65) a 'Z' (90)
+    for (let i = 65; i <= 90; i++) {
+        const letra = String.fromCharCode(i); // Converte o código ASCII para a letra (A, B, C...)
+
+        // Números de 0 a 9
+        for (let numero = 0; numero <= 9; numero++) {
+            ids.push(letra + numero); // Combina a letra e o número (A0, A1, ..., A9)
+        }
+    }
+
+    return ids;
+}
+
+
 
 function gentag(){
 
@@ -436,9 +545,9 @@ function gentag(){
 
     data.forEach((order) => {
 
-       if(checkdate(order.sale_date)){
+       /* if(checkdate(order.sale_date)){
             return
-        }
+        } */
 
         let lids = 0
         let headboards = 0
@@ -454,14 +563,15 @@ function gentag(){
             parts = parts + headboards + lids
 
             let contador = 0;
-            let letraAtual = '@';
-
+            let actualletter = String.fromCharCode("A".charCodeAt(0) - 1);
+           
+            
             const total_item_parts = item.parts + item.lid +item.headboard
 
             for(let i = 1; i<= item.qty * total_item_parts; i++){
                 
                 if (contador % total_item_parts === 0) {
-                    letraAtual = String.fromCharCode(letraAtual.charCodeAt(0) + 1);
+                    actualletter = String.fromCharCode(actualletter.charCodeAt(0) + 1);
                     contador = 0;
                 }
 
@@ -472,7 +582,7 @@ function gentag(){
                             <div class="order">${order.id}</div>`
 
                 if(total_item_parts > 1 )
-                    html += `<h1 class="order-pair">${letraAtual}</h1>`
+                    html += `<h1 class="order-pair">${actualletter}</h1>`
 
                     html += `<div class="product"><h2>${item.model} ${item.feature || ""} ${item.size}</h2>
                             <h3>${item.cloth}</h3></div>
@@ -541,3 +651,104 @@ function toggleCheckboxes() {
                 checkbox.checked = !checkbox.checked;
             });
         }
+
+function agrupar(){
+    grouped = !grouped
+    render(reportArr)
+}
+
+function inicializarDragAndDropPorClasse(className) {
+    // Seleciona todos os elementos com a classe
+    const containers = document.querySelectorAll(`.${className}`);
+    
+    // Itera sobre cada contêiner encontrado e aplica a lógica
+    containers.forEach(container => {
+        aplicarLogicaDragAndDrop(container);
+    });
+}
+
+function aplicarLogicaDragAndDrop(container) {
+    let itemArrastado = null;
+
+    container.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('item')) {
+            itemArrastado = e.target;
+            setTimeout(() => {
+                itemArrastado.classList.add('dragging');
+            }, 0);
+            e.dataTransfer.setData('text/plain', itemArrastado.dataset.id);
+        }
+    });
+
+    container.addEventListener('dragend', (e) => {
+        if (itemArrastado) {
+            itemArrastado.classList.remove('dragging');
+            
+            // Note: O querySelectorAll é chamado no 'container' específico
+            container.querySelectorAll('.item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+            itemArrastado = null;
+        }
+    });
+
+    container.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        
+        if (itemArrastado && e.target.classList.contains('item') && e.target.closest(`.${container.className}`) === container) {
+            
+            const posicaoReferencia = obterElementoMaisProximo(container, e.clientY);
+
+            container.querySelectorAll('.item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+
+            if (posicaoReferencia == null) {
+                if (container.lastElementChild && container.lastElementChild !== itemArrastado) {
+                    container.lastElementChild.classList.add('drag-over');
+                }
+            } else {
+                posicaoReferencia.classList.add('drag-over');
+            }
+        }
+    });
+
+    container.addEventListener('drop', (e) => {
+        e.preventDefault();
+        
+        if (itemArrastado) {
+            container.querySelectorAll('.item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+            
+            const posicaoReferencia = obterElementoMaisProximo(container, e.clientY);
+            
+            if (posicaoReferencia == null) {
+                container.appendChild(itemArrastado);
+            } else {
+                container.insertBefore(itemArrastado, posicaoReferencia);
+            }
+        }
+    });
+
+    function obterElementoMaisProximo(container, y) {
+        const itens = [...container.querySelectorAll('.item:not(.dragging)')];
+
+        return itens.reduce((maisProximo, itemAtual) => {
+            const caixa = itemAtual.getBoundingClientRect();
+            const centroY = caixa.top + (caixa.height / 2);
+            const offset = y - centroY;
+
+            if (offset < 0 && offset > maisProximo.offset) {
+                return { offset: offset, elemento: itemAtual };
+            } else {
+                return maisProximo;
+            }
+        }, { offset: -Infinity, elemento: null }).elemento;
+    }
+}
+
+// Chame a nova função passando a CLASSE do seu contêiner
+document.addEventListener('DOMContentLoaded', () => {
+    inicializarDragAndDropPorClasse('container-ordenavel');
+});

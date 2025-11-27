@@ -11,30 +11,77 @@
 <body>
 
     <header class="no-print">
+
+      <label for="file" class="button button-upload"> Importar Relatório de Pendências e/ou Produção
+        <input type="file" id="file" accept=".xls" onchange="">
+      </label>
+
       <nav>
         <button class="delete-button hide button" onclick="deleteSelectedOrders()">Deletar Pedidos Selecionados</button>
         <button class="button hide" onclick="toggleCheckboxes()">Inverter Seleção</button>
         <button class="tag-button hide button" onclick="gentag()">Gerar Etiquetas</button>
         <button class="button hide" onclick="renderbydate()">Ordernar Por Data</button>
         <button class="tag-button hide button" onclick="renderbyname()">Ordernar Por Nome</button>
+        <button class="tag-button hide button" onclick="agrupar()">Agrupar Pedidos</button>
+        <button class="tag-button hide button" onclick="listBox()">Caixas</button>
+        <button class="tag-button hide button" onclick="listOBS()">Observaçoes</button>
+        <button class="tag-button hide button" onclick="showOrders()">Ver Pedidos</button>
       </nav>
+
     </header>
     <main>
-      <div id="app"></div>
-      <label for="file" class="button button-upload"> Importar Relatório de Pendências e/ou Produção
-          <input type="file" id="file" accept=".xls" onchange="">
-      </label>
-
+      <small id="timestamp"></small>
+      <div id="app" class="container-ordenavel"></div>
       
     </main>
     
     <aside class="page" id="page-print">
-        <div class="tags" id="tagGenerator">
-        
+        <div class="tags container-ordenavel" id="tagGenerator">
+          <li class="tag order-details details" draggable="true">
+              <div class="order">0000</div>
+              <h1 class="order-pair">A</h1>
+              <div class="product">
+                  <h2>BOX GRAN 193X203X28</h2>
+                  <h3>COURO BRANCO</h3>
+              </div>
+              <div class="client">
+                  <h4>ESTOQUE</h4>
+              </div>
+              <div>Ateliê Soulflex - 62.409582/0001-11</div>
+          </li>
+          <li class="tag order-details details" draggable="true">
+              <div class="order">0000</div>
+              <h1 class="order-pair">B</h1>
+              <div class="product">
+                  <h2>BOX GRAN 193X203X28</h2>
+                  <h3>COURO BRANCO</h3>
+              </div>
+              <div class="client">
+                  <h4>ESTOQUE</h4>
+              </div>
+              <div>Ateliê Soulflex - 62.409582/0001-11</div>
+          </li>
+          <li class="tag order-details details" draggable="true">
+              <div class="order">0000</div>
+              <h1 class="order-pair">C</h1>
+              <div class="product">
+                  <h2>BOX GRAN 193X203X28</h2>
+                  <h3>COURO BRANCO</h3>
+              </div>
+              <div class="client">
+                  <h4>ESTOQUE</h4>
+              </div>
+              <div>Ateliê Soulflex - 62.409582/0001-11</div>
+          </li>
         </div>
     </aside>
     
-
+    <script src="https://sortablejs.github.io/Sortable/Sortable.js">
+      new Sortable(document.getElementById('app'), {
+        animation: 150,
+        ghostClass: 'blue-background-class'
+      });
+    </script>
     <script src="app.js"></script>
 </body>
 </html>
