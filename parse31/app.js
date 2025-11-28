@@ -162,7 +162,7 @@ function report(data){
         }
         else{
             if (currentOrder) {
-                console.log(item.row[1])
+                
                 const normalizedStr = item.row[1].replaceAll(".", "").replace(/\s+/g, ' ').trim();
 
                 const sizeRegx = /\d+[xX]\d+(?:\s*[xX]\d+)?/;
@@ -171,7 +171,7 @@ function report(data){
 
                 const sizeIndex = sizeMatch ? normalizedStr.indexOf(sizeMatch[0]) : normalizedStr.length;
 
-                var type = normalizedStr.slice(0, sizeIndex).trim().replace(/\s+/g, ' ').trim() || "";
+                let type = normalizedStr.slice(0, sizeIndex).trim().replace(/\s+/g, ' ').trim() || "";
                 //var type = normalizedStr.slice(0, sizeIndex).trim().replace("BOX", '').replace("GRAN", '').replace(/\s+/g, ' ').trim() || "";
 
                 const material = sizeMatch ? normalizedStr.slice(sizeIndex + sizeMatch[0].length).trim() || "N/A" : "N/A";
@@ -203,7 +203,7 @@ function report(data){
                 //.replace("BOX",'')
                 .trim()
 
-                console.log(newmodel)
+                
                 let parts = 1
                 let headboard = 0
                 let lid = 0
@@ -275,6 +275,11 @@ function report(data){
     heights = removeDoublesArr(heights)
     customers = removeDoublesArr(customers)
     //products = removeDoublesArr(products)
+    //console.log(obj)
+    for( const items in obj){
+        
+        jsonToHtmlTable(obj[items].items, 'appp');
+    }
     
     return obj
 }
@@ -380,7 +385,7 @@ function render(data){
 
     html = ``
 
-    data.forEach((order, i) => {
+    data.forEach((order) => {
         
        
         let pes = null
@@ -400,7 +405,7 @@ function render(data){
         })
 
         
-        html += `<label class="pedido-section item" for="order-${order.id}" draggable="true" data-id="${i}" >`;
+        html += `<label class="pedido-section" for="order-${order.id}">`;
 
         html +=
             `<input type="checkbox" id="order-${order.id}" value="${order.id}"/>
@@ -504,6 +509,8 @@ function render(data){
     html += `</div></div>`
     
     container.innerHTML = html;
+
+    
 }
 
 function setPageSize(cssPageSize) {
@@ -575,26 +582,39 @@ function gentag(){
                     contador = 0;
                 }
 
+                const cname = null
+
+                switch(item.cloth){
+                    case "PP1":
+                        cname = "Bege"
+                    case "PP2":
+                        cname = "Bege Escuro"
+                    case "PP3":
+                        cname = "Cinza"
+                    case "PP4":
+                        cname = ""
+                    case "PP5":
+                        cname = "Marrom"
+                }
+
                 contador++
                     html += `
-                
-                        <div class="tag order-details details">
-                            <div class="order">${order.id}</div>`
-
-                if(total_item_parts > 1 )
-                    html += `<h1 class="order-pair">${actualletter}</h1>`
-
-                    html += `<div class="product"><h2>${item.model} ${item.feature || ""} ${item.size}</h2>
-                            <h3>${item.cloth}</h3></div>
-                            
-                            
-
-                            <div class="client"><h4>${order.customer}</h4></div>
-                            <div>Ateliê Soulflex - 62.409582/0001-11</div>
-                            
-                            
-                        </div>
-                            
+                        <li class="tag">
+                            <div class="order-number">${order.id}</div>            
+                            <div class="item-container">
+                            `
+                    if(total_item_parts > 1 )
+                    html += `   <div class="item-pair">${actualletter}</div>`
+                                
+                    html += `   <div class="item-model">${item.model} ${item.feature || ""} ${item.size}</div>
+                                <div class="item-color">${item.cloth} ${cname ? " ("+cname+")" : ""}</div>
+                                </div>
+                                
+                            <div class="tag-footer">
+                                <div class="order-client">${order.customer}</div>
+                                <div class="cnpj">Ateliê Soulflex - 62.409582/0001-11</div>
+                            </div>
+                        </li>                            
                     `;
                 }
             
@@ -657,98 +677,39 @@ function agrupar(){
     render(reportArr)
 }
 
-function inicializarDragAndDropPorClasse(className) {
-    // Seleciona todos os elementos com a classe
-    const containers = document.querySelectorAll(`.${className}`);
+function jsonToHtmlTable(data, containerId) {
+
+    const dataArray = Array.isArray(data) ? data : [data];
+
+    if (dataArray.length === 0) return;
+
+    const container = document.getElementById(containerId);
+    if (!container) return;
     
-    // Itera sobre cada contêiner encontrado e aplica a lógica
-    containers.forEach(container => {
-        aplicarLogicaDragAndDrop(container);
-    });
-}
+    container.innerHTML += '</br>';
 
-function aplicarLogicaDragAndDrop(container) {
-    let itemArrastado = null;
+    const headers = Object.keys(dataArray[0]);
 
-    container.addEventListener('dragstart', (e) => {
-        if (e.target.classList.contains('item')) {
-            itemArrastado = e.target;
-            setTimeout(() => {
-                itemArrastado.classList.add('dragging');
-            }, 0);
-            e.dataTransfer.setData('text/plain', itemArrastado.dataset.id);
-        }
+    const table = document.createElement('table');
+    const thead = table.createTHead();
+    const headerRow = thead.insertRow();
+    
+    headers.forEach(headerText => {
+        const th = document.createElement('th');
+        th.textContent = headerText.toUpperCase();
+        headerRow.appendChild(th);
     });
 
-    container.addEventListener('dragend', (e) => {
-        if (itemArrastado) {
-            itemArrastado.classList.remove('dragging');
-            
-            // Note: O querySelectorAll é chamado no 'container' específico
-            container.querySelectorAll('.item').forEach(item => {
-                item.classList.remove('drag-over');
-            });
-            itemArrastado = null;
-        }
-    });
+    const tbody = table.createTBody();
 
-    container.addEventListener('dragover', (e) => {
-        e.preventDefault();
+    dataArray.forEach(obj => {
+        const row = tbody.insertRow();
         
-        if (itemArrastado && e.target.classList.contains('item') && e.target.closest(`.${container.className}`) === container) {
-            
-            const posicaoReferencia = obterElementoMaisProximo(container, e.clientY);
-
-            container.querySelectorAll('.item').forEach(item => {
-                item.classList.remove('drag-over');
-            });
-
-            if (posicaoReferencia == null) {
-                if (container.lastElementChild && container.lastElementChild !== itemArrastado) {
-                    container.lastElementChild.classList.add('drag-over');
-                }
-            } else {
-                posicaoReferencia.classList.add('drag-over');
-            }
-        }
+        headers.forEach(key => {
+            const cell = row.insertCell();
+            cell.textContent = obj[key];
+        });
     });
 
-    container.addEventListener('drop', (e) => {
-        e.preventDefault();
-        
-        if (itemArrastado) {
-            container.querySelectorAll('.item').forEach(item => {
-                item.classList.remove('drag-over');
-            });
-            
-            const posicaoReferencia = obterElementoMaisProximo(container, e.clientY);
-            
-            if (posicaoReferencia == null) {
-                container.appendChild(itemArrastado);
-            } else {
-                container.insertBefore(itemArrastado, posicaoReferencia);
-            }
-        }
-    });
-
-    function obterElementoMaisProximo(container, y) {
-        const itens = [...container.querySelectorAll('.item:not(.dragging)')];
-
-        return itens.reduce((maisProximo, itemAtual) => {
-            const caixa = itemAtual.getBoundingClientRect();
-            const centroY = caixa.top + (caixa.height / 2);
-            const offset = y - centroY;
-
-            if (offset < 0 && offset > maisProximo.offset) {
-                return { offset: offset, elemento: itemAtual };
-            } else {
-                return maisProximo;
-            }
-        }, { offset: -Infinity, elemento: null }).elemento;
-    }
+    container.appendChild(table);
 }
-
-// Chame a nova função passando a CLASSE do seu contêiner
-document.addEventListener('DOMContentLoaded', () => {
-    inicializarDragAndDropPorClasse('container-ordenavel');
-});

@@ -140,9 +140,6 @@ h3{ color:#888}
         max-height: 50mm;
         width: 100mm;
         position: relative;
-        cursor: grab;
-        -webkit-user-select: none;
-        user-select: none;
       }
 
       .product {
@@ -230,7 +227,9 @@ span.qty-count{
   display: none;
  }
 
-
+span.item-id {
+    /* border-left: 1px solid; */
+}
 
 span.item-customer, span.item-id {
     /* border-inline: 1px solid; */
@@ -255,7 +254,7 @@ span.item-customer, span.item-id {
 
     @page {
         size: A4;
-        margin: 2.5mm; 
+        margin: 0; 
     }
     .observations{
       display: none;
@@ -287,4 +286,60 @@ span.item-customer, span.item-id {
     * {
         page-break-inside: avoid;
     }
+}
+
+
+
+.tag {
+    background-color: #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: space-between;
+    box-sizing: border-box;
+    padding: 3mm;
+    margin: 0;
+    height: 50mm;
+    width: 100mm;
+    position: relative;
+}
+
+.tags-container {
+    padding: 0;
+    margin: 0;
+}
+
+.order-number,.cnpj {font-size: smaller;text-transform: uppercase;}
+
+.order-client{
+  font-weight: bold;
+  padding-bottom: 1.5mm;
+}
+
+.item-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5mm;
+}
+
+.item-model {
+    font-size: 28px;
+    font-weight: bold;
+    font-family: sans-serif;
+}
+
+.item-pair {
+    position: absolute;
+    right: 9mm;
+    top: -3mm;
+    font-size: 40mm;
+    opacity: 0.2;
+    font-family: fantasy;
+    transform: scaleX(1.5);
+}
+
+.item-color {
+    font-weight: bold;
+    font-size: large;
+    opacity: .6;
 }

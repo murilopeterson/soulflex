@@ -31,57 +31,17 @@
     </header>
     <main>
       <small id="timestamp"></small>
-      <div id="app" class="container-ordenavel"></div>
+      <div id="app"></div>
+      <div id="appp"></div>
       
     </main>
     
     <aside class="page" id="page-print">
-        <div class="tags container-ordenavel" id="tagGenerator">
-          <li class="tag order-details details" draggable="true">
-              <div class="order">0000</div>
-              <h1 class="order-pair">A</h1>
-              <div class="product">
-                  <h2>BOX GRAN 193X203X28</h2>
-                  <h3>COURO BRANCO</h3>
-              </div>
-              <div class="client">
-                  <h4>ESTOQUE</h4>
-              </div>
-              <div>Ateliê Soulflex - 62.409582/0001-11</div>
-          </li>
-          <li class="tag order-details details" draggable="true">
-              <div class="order">0000</div>
-              <h1 class="order-pair">B</h1>
-              <div class="product">
-                  <h2>BOX GRAN 193X203X28</h2>
-                  <h3>COURO BRANCO</h3>
-              </div>
-              <div class="client">
-                  <h4>ESTOQUE</h4>
-              </div>
-              <div>Ateliê Soulflex - 62.409582/0001-11</div>
-          </li>
-          <li class="tag order-details details" draggable="true">
-              <div class="order">0000</div>
-              <h1 class="order-pair">C</h1>
-              <div class="product">
-                  <h2>BOX GRAN 193X203X28</h2>
-                  <h3>COURO BRANCO</h3>
-              </div>
-              <div class="client">
-                  <h4>ESTOQUE</h4>
-              </div>
-              <div>Ateliê Soulflex - 62.409582/0001-11</div>
-          </li>
-        </div>
+        <ul class="tags-container" id="tagGenerator">
+        </ul>
     </aside>
     
-    <script src="https://sortablejs.github.io/Sortable/Sortable.js">
-      new Sortable(document.getElementById('app'), {
-        animation: 150,
-        ghostClass: 'blue-background-class'
-      });
-    </script>
+
     <script src="app.js"></script>
 </body>
 </html>

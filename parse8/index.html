@@ -5,12 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <title>Parse 8</title>
+    <style>
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
 
+        th, td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #009879;
+            color: white;
+            font-weight: bold;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f3f3f3;
+        }
+
+        tbody tr:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
        
     <input id="file" type="file" class="btns " accept=".xlsx, .xls" title="Import XLS" value="Import XLS">
+
+    <div id="app"></div>
 
     <script type="module" src="js/main.js"></script>
 </body>
