@@ -462,15 +462,25 @@ class App{
                                         .replace('BOX', ' ')
                                         .replace('BAU', ' ')
                                         .replace('CASHEMERE', ' ')
-                                        .replace('PRIME', ' ')
-                                        .replace('DIAMANTE', ' ')
-                                        .replace('ELETRONICO', ' ')
+                                        .replace('GOLD PRIME', 'PRIME')
+                                        //.replace('DIAMANTE', ' ')
                                         .replace('ANTIDERRAPANTE', ' ')
                                         .replace('BICAMA', ' ')
                                         .replace('TATAME', ' ')
                                         .replace('PRATIC', ' ')
                                         .replace('LUXO', ' ')
                                         .replace('EVOLUTION', ' ')
+                        let cat = itemtp.cat
+                                        .replace('SOUL', '')
+                                        .replace('ELETRONICO', '')
+                                        .replace('PRIME', 'BOX')
+                                        .replace('DIAMANTE', 'BOX')
+
+                        if(cat == "CASHEMERE"){
+                            modelo = cat
+                            cat = 'BOX'
+                        }
+                            
 
                         for(let i = 1; i <= item[3]; i++){
                             const row = {
@@ -478,7 +488,8 @@ class App{
                                 venda:obj[current].sale_date,
                                 prazo:obj[current].deadline,
                                 loja:obj[current].client,
-                                tipo:itemtp.cat,
+                                item:item[1],
+                                tipo:cat,
                                 modelo,
                                 tamanho:itemtp.size,
                                 roupa:itemtp.cloth,
