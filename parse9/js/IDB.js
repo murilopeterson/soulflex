@@ -62,7 +62,7 @@ export default class IDB {
             return [];
         }
         
-        const db = await this.open();
+        const db = await this.connect();
         
         return new Promise((resolve, reject) => {
             const transaction = db.transaction(this.storeName, 'readwrite');
