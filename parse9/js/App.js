@@ -1,6 +1,7 @@
 import XLS from "./XLS.js";
 import IDB from "./IDB.js";
-//import Util from "./Util.js";
+import Util from "./Util.js";
+import StringRegistry from "./REG.js"
 
 class Reader{
     constructor(input, callback){
@@ -34,14 +35,15 @@ class App{
     onFileChange(data) {
         if (!data) return
 
-        const obj   = []
-        const orders = []
-        const title = data?.[0]?.[0] ?? ''
-        const range = data?.[0]?.[1] ?? ''
+        const obj    = []
+        const total = []
+        const title  = data?.[0]?.[0] ?? ''
+        const range  = data?.[0]?.[1] ?? ''
+        const period = range.match(/\d{2}\/\d{2}\/\d{4}/g);
+
+        obj["header"] = {title,from:period[0], to:period[1]}
 
         let current = null
-
-        obj.push({title,range})
 
         if(title.includes("Relatório"))
             data.forEach((item, index) => {
@@ -52,13 +54,28 @@ class App{
                     const obs   = typeof data[index+1][0] === 'string' ? data[index+1][0] : ''
                     const order = this.orderParse(item[0])
 
+                    const clients = new StringRegistry('clients');
+                    const client = {
+                        name:order.client,
+                        alias:"",
+                        route:""
+                    }
+                    const clientId = clients.getOrRegister(client,"name");
+
+                    const sellers = new StringRegistry('sellers');
+                    const sellerId = sellers.getOrRegister(order.seller);
+
+                    const orders = new StringRegistry('orders');
+                    const orderId = orders.getOrRegister(order.op,"id");
+
                     current = order.op
 
                     obj[order.op] = {
-                        info: item[0],
-                        order,
-                        client:order.client,
-                        sale_date:order.sale_date,
+                        //info: item[0],
+                        //order,
+                        client:clientId,
+                        sale_date: order.sale_date,
+                        seller:sellerId,
                         ref,obs,
                         deadline: "",
                         items:[],
@@ -70,14 +87,62 @@ class App{
 
                 if(current){
                     if( item.length === 5 && Number.isInteger(item[0])){
-                        obj[current].items.push(this.itemParse(item))
+                        const itemParsed = this.itemParse(item)
+
+                        const models     = new StringRegistry('models');
+                        const model      = models.getOrRegister(itemParsed.type + " " + itemParsed.model)
+
+                        const coats      = new StringRegistry('coats');
+                        const coat       = coats.getOrRegister(itemParsed.coat)
+
+                        const sizes      = new StringRegistry('sizes');
+                        const size       = sizes.getOrRegister(itemParsed.size)
+                        
+                        const register   = 
+                            Util.encode(obj[current].client)+
+                            current+
+                            Util.encode(model)+
+                            Util.encode(coat)+
+                            Util.encode(size)+
+                            item[3]
+
+                        const product_temp    = {                            
+                            model,
+                            coat,
+                            size,
+                            qty:item[3],
+                            price:item[2]
+                        }
+
+                        total.push(register)
+                        const products = new StringRegistry('products');
+                        const product  = products.getOrRegister(register);
+
+                        obj[current].deadline = this.checkSpecials(obj[current].sale_date,item[1])
+                        obj[current].items[register] = []
+                        /* obj[current].items[register]["model"] = model
+                        obj[current].items[register]["coat"]  = coat
+                        obj[current].items[register]["size"]  = size
+                        obj[current].items[register]["qty"]   = item[3] */
+                        obj[current].items[register]["price"] = item[2]
+                        
+                        return
+                    }
+                    if( item.length === 4 && item[3] && String(item[3] || "").includes("Valor")){
+                        const payments   = new StringRegistry('payments');
+                        const payment    = payments.getOrRegister(item[1])
+                        obj[current].payment["type"]  = payment
+                        obj[current].payment["value"] = item[2]
                         return
                     }
                 }
 
             })
 
-        this.generateList(obj)
+        const prods = JSON.parse(localStorage.getItem("orders"))
+        console.log(obj)
+        
+        this.genDetailsList(prods,"draggable-list")
     }
 
     saveClient(client){
@@ -120,7 +185,7 @@ class App{
             values.push(value === "" ? null : value);
         }
         
-        const keys = ["op", "sale_date", "invoice_date", "nfe", "salesman", "client"];
+        const keys = ["op", "sale_date", "invoice_date", "nfe", "seller", "client"];
 
         return Object.fromEntries(keys.map((key, i) => [key, values[i]]));
 
@@ -159,17 +224,21 @@ class App{
                         .replace("1 LISTRA",'')
                         .replace("LISA",'') */
                         .trim()
-        let type    = this.getItemType(["BAU", "BICAMA", "TATAME", "ANTIDERRAPANTE", "PRATIC"], box)
-        let model   = this.getItemType(["GOLD", "PRIME", "LUXO", "DIAMANTE", "CASHEMERE", "SOUL", "EVOLUTION", "ELETRONICO"], title)
-        return { type: (type || "BOX"), model: (model || "GRAN"), box}
+        let type    = this.getStringFromArray(["BAU", "BICAMA", "TATAME", "ANTIDERRAPANTE", "PRATIC"], box)
+        let model   = this.getStringFromArray(["GOLD", "PRIME", "LUXO", "DIAMANTE", "CASHEMERE", "SOUL", "EVOLUTION", "ELETRONICO"], title)
+        return { type: (type || "BOX"), model: (model || "GRAN") }
     }
 
-    getItemType(items, title) {
-        if (!title) return null;
+    coatParse(cloth){
 
-        const normalized = title.toUpperCase();
+    }
 
-        return items.find(item =>
+    getStringFromArray(obj, string) {
+        if (!string) return null;
+
+        const normalized = string.toUpperCase();
+
+        return obj.find(item =>
             normalized.includes(item.toUpperCase())
         ) ?? null;
     }
@@ -183,14 +252,14 @@ class App{
 
         const sizeIndex = sizeMatch ? normalizedStr.indexOf(sizeMatch[0]) : normalizedStr.length;
 
-        const type =    normalizedStr.slice(0, sizeIndex).trim()
+        const model =    normalizedStr.slice(0, sizeIndex).trim()
                         .replace(/\s+/g, ' ')
                         .trim() || "";
         
-        const cloth = sizeMatch ? normalizedStr.slice(sizeIndex + sizeMatch[0].length).trim() || "N/A" : "N/A";
+        const coat = sizeMatch ? normalizedStr.slice(sizeIndex + sizeMatch[0].length).trim() || "N/A" : "N/A";
 
-        console.log(this.modelParse(type))
-        return
+        //console.log(this.modelParse(type))
+        return { type:this.modelParse(model).type, model:this.modelParse(model).model, coat, size}
 
         let newmodel =  type.replace("108 COURO BEGE", 'ZZZ')
                             .replace("BOX BAU", 'BAU')
@@ -266,9 +335,158 @@ class App{
         return { id:item[0], type, size, cloth, price:item[2], qty:item[3], cat:newItem.nmodel, model:newItem.model }
     }
 
+    checkSpecials(sale_date,item){
+        let quee_time = 7
+                        
+        const specials  = ["DIAMANTE", "BAU", "BICAMA"]
+        const extra     = ["ELETRONICO"]
+
+        if(specials.some(p => item.includes(p)))
+            quee_time = 14
+        
+        if(extra.some(p => item.includes(p)))
+            quee_time = 21
+
+        return this.checkDeadline(sale_date,quee_time).deadline;
+
+    }
+
+    genDetailsList(data, containerId, groupKey = null) {
+    if (!data || Object.keys(data).length === 0) return;
+
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const entries = Object.entries(data);
+    let lastGroupValue = null;
+
+    entries.forEach(([id, obj]) => {
+        const order = new StringRegistry("orders").getValueById(id)
+
+        const currentGroupValue = groupKey ? (obj[groupKey] || "") : "";
+
+        if (groupKey && currentGroupValue !== lastGroupValue && currentGroupValue !== "") {
+            const spacer = document.createElement('div');
+            spacer.style.height = "20px";
+            container.appendChild(spacer);
+
+            const groupHeader = document.createElement('h3');
+            groupHeader.textContent = currentGroupValue;
+            container.appendChild(groupHeader);
+
+            lastGroupValue = currentGroupValue;
+        }
+
+        const details = document.createElement('details');
+        details.dataset.id = order
+        details.draggable = true;
+
+        const summary = document.createElement('summary');
+        summary.classList.toggle("red")
+        const dateDisplay = obj.sale_date ? obj.sale_date.replace(/\/20(\d{2})$/, "/$1") : "";
+
+        summary.innerHTML = `
+            <span><b>${order} Cliente ${obj.client || ''}</b> - ${obj.obs || ''}</span>
+            <em>${dateDisplay}</em>
+        `;
+
+        const content = document.createElement('div');
+        content.style.padding = "10px";
+        
+        Object.entries(obj).forEach(([key, val]) => {
+            if (key !== groupKey) {
+                const p = document.createElement('p');
+                const displayVal = Array.isArray(val) ? val.join(", ") : val;
+                p.innerHTML = `<strong>${key.toUpperCase()}:</strong> ${displayVal}`;
+                content.appendChild(p);
+            }
+        });
+
+        details.appendChild(summary);
+        details.appendChild(content);
+        container.appendChild(details);
+
+        
+    });
+}
+
+getOrderData(containerId, originalData) {
+    const container = document.getElementById(containerId);
+    const items = container.querySelectorAll('details');
+    const orderedData = {};
+
+    items.forEach(item => {
+        const id = item.dataset.id;
+        if (originalData[id]) {
+            orderedData[id] = originalData[id];
+        }
+    });
+
+    return orderedData;
+}
+
+    genTable(data, containerId, groupKey = null) {
+        if (!data || Object.keys(data).length === 0) return;
+
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const entries = Object.entries(data);
+        const firstPayload = entries[0][1];
+        const dataHeaders = Object.keys(firstPayload);
+        
+        const displayHeaders = groupKey ? dataHeaders.filter(h => h !== groupKey) : dataHeaders;
+        const finalHeaders = ["ID", ...displayHeaders];
+
+        const table = document.createElement('table');
+        const thead = table.createTHead();
+        const headerRow = thead.insertRow();
+
+        finalHeaders.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h.toUpperCase();
+            headerRow.appendChild(th);
+        });
+
+        const tbody = table.createTBody();
+        let lastGroupValue = null;
+
+        entries.forEach(([id, obj]) => {
+            if (groupKey && obj[groupKey] !== undefined) {
+                const currentGroupValue = obj[groupKey] || "";
+
+                if (currentGroupValue !== lastGroupValue && currentGroupValue !== "") {
+                    const spacerRow = tbody.insertRow();
+                    const spacerCell = spacerRow.insertCell();
+                    spacerCell.colSpan = finalHeaders.length;
+                    spacerCell.innerHTML = "&nbsp;"; 
+
+                    const groupRow = tbody.insertRow();
+                    const cell = groupRow.insertCell();
+                    cell.colSpan = finalHeaders.length;
+                    cell.textContent = currentGroupValue;
+                    
+                    lastGroupValue = currentGroupValue;
+                }
+            }
+
+            const row = tbody.insertRow();
+            const idCell = row.insertCell();
+            idCell.textContent = id;
+
+            displayHeaders.forEach(key => {
+                const cell = row.insertCell();
+                const val = obj[key] ?? "";
+                cell.textContent = Array.isArray(val) ? val.join(", ") : val;
+            });
+        });
+
+        container.appendChild(table);
+    }
+
     generateList(list){
         list.forEach(item => {
-            console.log(item)
+            //console.log(item)
         })
     }
 
@@ -283,7 +501,7 @@ class App{
         while (workingDays < quee_time) {
             deadline.setDate(deadline.getDate() + 1);
             
-            if (this.check_holiday(deadline)) {
+            if (this.checkHoliday(deadline)) {
                 workingDays++;
             }
         }
@@ -291,7 +509,7 @@ class App{
         const diffInMs   = new Date(deadline) - new Date()
         const diffInDays = diffInMs / (1000 * 60 * 60 * 24)
 
-        return {count:Math.round(diffInDays),deadline: deadline.toLocaleDateString()};
+        return { count: Math.round(diffInDays), deadline: this.shortenYear(deadline.toLocaleDateString())};
     }
 
     checkHoliday(date){
@@ -310,6 +528,30 @@ class App{
                         ,"12-22","12-23","12-24","12-26","12-29","12-30","12-31","01-02"
                     ];
         return weekday !== 0 && weekday !== 6 && !holidays.includes(formatedDate);
+    }
+
+    dateFormater(dateStr) {
+        const months = [
+            "jan", "fev", "mar", "abr", "mai", "jun",
+            "jul", "ago", "set", "out", "nov", "dez"
+        ];
+
+        const parts = dateStr.split('/');
+
+        const day = parts[0];
+        const monthIndex = parseInt(parts[1], 10) - 1;
+
+        return `${day} ${months[monthIndex]}`;
+    }
+
+    shortenYear(dateStr) {
+        if (!dateStr) return "";
+        return dateStr.replace(/\/20(\d{2})$/, "/$1");
+    }
+
+    formatYear(dateStr) {
+        if (!dateStr) return "";
+        return dateStr.replace(/\/(\d{2})$/, "/20$1");
     }
 
 }
@@ -391,5 +633,28 @@ class DragAndDropList {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const listManager = new DragAndDropList('#draggable-list');
+            const listManager = new DragAndDropList('#draggable-list');
+        });
+
+function getOrderedIds(containerId, elementType) {
+    const container = document.getElementById(containerId);
+    if (!container) return [];
+
+    // Busca todos os elementos do tipo (ex: 'details') dentro do container
+    const items = container.querySelectorAll(elementType);
+
+    // Transforma a lista de elementos em um array apenas com o valor do dataset.id
+    return Array.from(items).map(item => item.dataset.id);
+}
+const container = document.getElementById('draggable-list');
+
+container.addEventListener('dragend', (e) => {
+    if (e.target.tagName === 'DETAILS') {
+        e.target.classList.remove('dragging');
+
+        // Chama a função passando o ID do container e o tipo do elemento
+        const currentOrder = getOrderedIds('draggable-list', 'details');
+        
+        //console.log("Ordem atual dos IDs:", currentOrder);
+    }
 });
