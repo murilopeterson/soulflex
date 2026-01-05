@@ -2,6 +2,7 @@ import XLS from "./XLS.js";
 import IDB from "./IDB.js";
 import Util from "./Util.js";
 import StringRegistry from "./REG.js"
+import Database from "./Database.js"
 
 class Reader{
     constructor(input, callback){
@@ -32,6 +33,14 @@ class App{
         this.onFileChange()
     }
 
+    upsert(db, data, id = null){
+        const database = new Database(db)
+        if(id)
+            return database.upsert(data, id)
+        else
+            return database.insert(data)
+    }
+
     onFileChange(data) {
         if (!data) return
 
@@ -50,36 +59,32 @@ class App{
 
                 if(typeof item[0] == 'string' && item[0].includes("Pedido: ")){
                 
-                    const ref   = item[1] ? Number(item[1]) : ''
-                    const obs   = typeof data[index+1][0] === 'string' ? data[index+1][0] : ''
-                    const order = this.orderParse(item[0])
+                    const ref       = item[1] ? Number(item[1]) : ''
+                    const obs       = typeof data[index+1][0] === 'string' ? data[index+1][0] : ''
+                    const priority  = obs.toUpperCase().includes("URGENTE") ? 1 : 0
+                    const order     = this.orderParse(item[0])
 
-                    const clients = new StringRegistry('clients');
-                    const client = {
-                        name:order.client,
-                        alias:"",
-                        route:""
+                    let client      = {
+                        name:   order.client,
+                        alias:  "",
+                        route:  ""
                     }
-                    const clientId = clients.getOrRegister(client,"name");
-
-                    const sellers = new StringRegistry('sellers');
-                    const sellerId = sellers.getOrRegister(order.seller);
-
-                    const orders = new StringRegistry('orders');
-                    const orderId = orders.getOrRegister(order.op,"id");
+                    
 
                     current = order.op
 
-                    obj[order.op] = {
-                        //info: item[0],
-                        //order,
-                        client:clientId,
-                        sale_date: order.sale_date,
-                        seller:sellerId,
-                        ref,obs,
-                        deadline: "",
-                        items:[],
-                        payment:[]
+                    obj[current]   = {
+                        client,
+                        status:     "",
+                        deadline:   "",
+                        sale_date:  order.sale_date,
+                        invoice:    order.invoice,
+                        seller:     order.seller,
+
+                        ref, obs, priority,
+                        
+                        items:{},
+                        payment:{}
                     }
 
                     return
@@ -99,19 +104,19 @@ class App{
                         const size       = sizes.getOrRegister(itemParsed.size)
                         
                         const register   = 
-                            Util.encode(obj[current].client)+
                             current+
                             Util.encode(model)+
                             Util.encode(coat)+
                             Util.encode(size)+
                             item[3]
 
-                        const product_temp    = {                            
-                            model,
-                            coat,
-                            size,
-                            qty:item[3],
-                            price:item[2]
+                        const product_temp    = {
+                            type:        itemParsed.type,
+                            model:       itemParsed.model,
+                            coat:        itemParsed.coat,
+                            size:        itemParsed.size,
+                            qty:         item[3],
+                            price:       item[2]
                         }
 
                         total.push(register)
@@ -119,12 +124,9 @@ class App{
                         const product  = products.getOrRegister(register);
 
                         obj[current].deadline = this.checkSpecials(obj[current].sale_date,item[1])
-                        obj[current].items[register] = []
-                        /* obj[current].items[register]["model"] = model
-                        obj[current].items[register]["coat"]  = coat
-                        obj[current].items[register]["size"]  = size
-                        obj[current].items[register]["qty"]   = item[3] */
-                        obj[current].items[register]["price"] = item[2]
+                        obj[current].items[register] = product_temp
+                        /* 
+                        obj[current].items[register]["price"] = item[2] */
                         
                         return
                     }
