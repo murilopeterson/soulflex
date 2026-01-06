@@ -29,6 +29,11 @@ class Reader{
 class App{
 
     constructor(){
+
+        //CHECK DATABASE
+        //UPDATE ORDERLIST
+
+
         this.file = new Reader("file", this.onFileChange.bind(this))
         this.onFileChange()
     }
@@ -45,12 +50,12 @@ class App{
         if (!data) return
 
         const obj    = []
-        const total = []
+        const total  = []
         const title  = data?.[0]?.[0] ?? ''
         const range  = data?.[0]?.[1] ?? ''
         const period = range.match(/\d{2}\/\d{2}\/\d{4}/g);
 
-        obj["header"] = {title,from:period[0], to:period[1]}
+        const header = { title, from:period[0], to:period[1] }
 
         let current = null
 
@@ -62,6 +67,7 @@ class App{
                     const ref       = item[1] ? Number(item[1]) : ''
                     const obs       = typeof data[index+1][0] === 'string' ? data[index+1][0] : ''
                     const priority  = obs.toUpperCase().includes("URGENTE") ? 1 : 0
+                    const pickup    = obs.toUpperCase().includes("BUSCAR") ? 1 : 0
                     const order     = this.orderParse(item[0])
 
                     let client      = {
@@ -81,7 +87,7 @@ class App{
                         invoice:    order.invoice,
                         seller:     order.seller,
 
-                        ref, obs, priority,
+                        ref, obs, priority, pickup,
                         
                         items:{},
                         payment:{}
@@ -94,6 +100,8 @@ class App{
                     if( item.length === 5 && Number.isInteger(item[0])){
                         const itemParsed = this.itemParse(item)
 
+                        const test = new Database("modelsx").upsert(itemParsed.type + " " + itemParsed.model)
+                        console.log(test)
                         const models     = new StringRegistry('models');
                         const model      = models.getOrRegister(itemParsed.type + " " + itemParsed.model)
 
@@ -108,7 +116,7 @@ class App{
                             Util.encode(model)+
                             Util.encode(coat)+
                             Util.encode(size)+
-                            item[3]
+                            item[3] //QTY
 
                         const product_temp    = {
                             type:        itemParsed.type,
@@ -147,32 +155,69 @@ class App{
         this.genDetailsList(prods,"draggable-list")
     }
 
-    saveClient(client){
+    itemParse(item){
+        const normalizedStr = item[1].replaceAll(".", "").replace(/\s+/g, ' ').trim();
 
-        const clientsDB = new IDB("MeuDB", "clients", {
-            keyPath: "id",
-            autoIncrement: false,
-            indexes: [
-                { name: "route_code", key: "route" },
-                { name: "client_name", key: "client" }
-            ]
-        });
+        const sizeRegx = /\d+[xX]\d+(?:\s*[xX]\d+)?/;
+        const sizeMatch = normalizedStr.match(sizeRegx);
+        const size = sizeMatch ? sizeMatch[0].replace(/\s*([xX])\s*/g, '$1').toUpperCase() : "";
 
+        const sizeIndex = sizeMatch ? normalizedStr.indexOf(sizeMatch[0]) : normalizedStr.length;
 
-        (async () => {
-            console.log("Iniciando o salvamento de todos os clientes em uma única transação...");
+        const model =    normalizedStr.slice(0, sizeIndex).trim()
+                        .replace(/\s+/g, ' ')
+                        .trim() || "";
+        
+        const coat = sizeMatch ? normalizedStr.slice(sizeIndex + sizeMatch[0].length).trim() || "N/A" : "N/A";
 
-            try {
-                // Chama o novo método saveAll com o array completo
-                const savedKeys = await clientsDB.saveAll(CLIENTS_DATA);
-                
-                console.log(`Sucesso! Foram salvos ${savedKeys.length} clientes.`);
-                console.log("Chaves dos clientes salvos (devem ser os IDs):", savedKeys);
-                
-            } catch (error) {
-                console.error("Erro ao salvar o array de clientes:", error);
+        return { type:this.modelParse(model).type, model:this.modelParse(model).model, coat, size}
+        
+        let parts = 1
+        let headboard = 0
+        let lid = 0
+
+        const pt = size.split("X")
+
+        const cond = ["BICAMA", "BAU", "TATAME"]
+
+        if(pt[0] > 138 || type.includes("PARTID") ){
+            parts++
+            if(type.includes("BAU") ){
+                lid++
             }
-        })();
+        }
+
+        if(type.includes("DIAMANTE")){
+            headboard++
+        }
+
+        if(pt[0] > 138 && type.includes("SEM CABECEIRA")){
+            headboard--
+        }
+        
+        /* type = type.split(" ");
+        let feature = type.slice(1).join(" ")
+        type = type[0]
+
+        let model = {type: type, size: size, feature: feature, qty: item.row[2]} */
+
+        let newItem =  {
+            id: item[0],
+            nmodel: (newmodel || "BOX"),
+            model: type,
+            //size: `${pt[0]}x${pt[1]}`,
+            size: size,
+            height: pt[2] ?? "",
+            //feature: feature,
+            parts: parts,
+            cloth: cloth,
+            headboard:headboard,
+            lid:lid,
+            qty: item[2]
+        };
+     
+        
+        return { id:item[0], type, size, cloth, price:item[2], qty:item[3], cat:newItem.nmodel, model:newItem.model }
     }
 
     orderParse(order){
@@ -226,13 +271,87 @@ class App{
                         .replace("1 LISTRA",'')
                         .replace("LISA",'') */
                         .trim()
+
         let type    = this.getStringFromArray(["BAU", "BICAMA", "TATAME", "ANTIDERRAPANTE", "PRATIC"], box)
         let model   = this.getStringFromArray(["GOLD", "PRIME", "LUXO", "DIAMANTE", "CASHEMERE", "SOUL", "EVOLUTION", "ELETRONICO"], title)
+
         return { type: (type || "BOX"), model: (model || "GRAN") }
     }
+    
+    //###############################
 
-    coatParse(cloth){
+    genDetailsList(data, containerId, groupKey = null) {
+        if (!data || Object.keys(data).length === 0) return;
 
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const entries = Object.entries(data);
+        let lastGroupValue = null;
+
+        entries.forEach(([id, obj]) => {
+            const order = new StringRegistry("orders").getValueById(id)
+
+            const currentGroupValue = groupKey ? (obj[groupKey] || "") : "";
+
+            if (groupKey && currentGroupValue !== lastGroupValue && currentGroupValue !== "") {
+                const spacer = document.createElement('div');
+                spacer.style.height = "20px";
+                container.appendChild(spacer);
+
+                const groupHeader = document.createElement('h3');
+                groupHeader.textContent = currentGroupValue;
+                container.appendChild(groupHeader);
+
+                lastGroupValue = currentGroupValue;
+            }
+
+            const details = document.createElement('details');
+            details.dataset.id = order
+            details.draggable = true;
+
+            const summary = document.createElement('summary');
+            summary.classList.toggle("red")
+            const dateDisplay = obj.sale_date ? obj.sale_date.replace(/\/20(\d{2})$/, "/$1") : "";
+
+            summary.innerHTML = `
+                <span><b>${order} Cliente ${obj.client || ''}</b> - ${obj.obs || ''}</span>
+                <em>${dateDisplay}</em>
+            `;
+
+            const content = document.createElement('div');
+            content.style.padding = "10px";
+            
+            Object.entries(obj).forEach(([key, val]) => {
+                if (key !== groupKey) {
+                    const p = document.createElement('p');
+                    const displayVal = Array.isArray(val) ? val.join(", ") : val;
+                    p.innerHTML = `<strong>${key.toUpperCase()}:</strong> ${displayVal}`;
+                    content.appendChild(p);
+                }
+            });
+
+            details.appendChild(summary);
+            details.appendChild(content);
+            container.appendChild(details);
+
+            
+        });
+    }
+
+    getOrderData(containerId, originalData) {
+        const container = document.getElementById(containerId);
+        const items = container.querySelectorAll('details');
+        const orderedData = {};
+
+        items.forEach(item => {
+            const id = item.dataset.id;
+            if (originalData[id]) {
+                orderedData[id] = originalData[id];
+            }
+        });
+
+        return orderedData;
     }
 
     getStringFromArray(obj, string) {
@@ -245,97 +364,8 @@ class App{
         ) ?? null;
     }
 
-    itemParse(item){
-        const normalizedStr = item[1].replaceAll(".", "").replace(/\s+/g, ' ').trim();
 
-        const sizeRegx = /\d+[xX]\d+(?:\s*[xX]\d+)?/;
-        const sizeMatch = normalizedStr.match(sizeRegx);
-        const size = sizeMatch ? sizeMatch[0].replace(/\s*([xX])\s*/g, '$1').toUpperCase() : "";
-
-        const sizeIndex = sizeMatch ? normalizedStr.indexOf(sizeMatch[0]) : normalizedStr.length;
-
-        const model =    normalizedStr.slice(0, sizeIndex).trim()
-                        .replace(/\s+/g, ' ')
-                        .trim() || "";
-        
-        const coat = sizeMatch ? normalizedStr.slice(sizeIndex + sizeMatch[0].length).trim() || "N/A" : "N/A";
-
-        //console.log(this.modelParse(type))
-        return { type:this.modelParse(model).type, model:this.modelParse(model).model, coat, size}
-
-        let newmodel =  type.replace("108 COURO BEGE", 'ZZZ')
-                            .replace("BOX BAU", 'BAU')
-                            .replace("GOLD LUXO", 'LUXO')
-                            .replace("BOX TATAME", 'TATAME')
-                            .replace("BOX EVOLUTION", 'TATAME EVOLUTION')
-                            .replace("BOX BICAMA", 'BICAMA')
-                            .replace("BOX DIAMANTE TATAME", 'TATAME DIAMANTE')
-                            .replace("GOLD PRIME", 'PRIME')
-                            .replace("PARTIDA", 'PARTIDO')
-                            .replace("CABECEIRA LISTRAS", 'LISTRAS')
-                            .replace("GOLD CASHMERE", 'CASHMERE')
-                            .replace("ANTIDERRAOANTE", 'ANTIDERRAPANTE')
-                            .replace("ANTIDERRPANTE", 'ANTIDERRAPANTE')
-                            .replace("UMA LISTRA", '1 LISTRA')
-                            .replace("C/", 'COM')
-
-                            .replace("BOX ",'')
-                            .replace("GRAN PARTIDO", 'BOX PARTIDO')
-                            .replace("GRAN",'')
-                            .replace("GOLD",'')
-                            .replace("LISTRAS",'')
-                            .replace("1 LISTRA",'')
-                            .replace("LISA",'')
-                            .trim()
-
-        
-        let parts = 1
-        let headboard = 0
-        let lid = 0
-
-        const pt = size.split("X")
-
-        const cond = ["BICAMA", "BAU", "TATAME"]
-
-        if(pt[0] > 138 || type.includes("PARTID") ){
-            parts++
-            if(type.includes("BAU") ){
-                lid++
-            }
-        }
-
-        if(type.includes("DIAMANTE")){
-            headboard++
-        }
-
-        if(pt[0] > 138 && type.includes("SEM CABECEIRA")){
-            headboard--
-        }
-        
-        /* type = type.split(" ");
-        let feature = type.slice(1).join(" ")
-        type = type[0]
-
-        let model = {type: type, size: size, feature: feature, qty: item.row[2]} */
-
-        let newItem =  {
-            id: item[0],
-            nmodel: (newmodel || "BOX"),
-            model: type,
-            //size: `${pt[0]}x${pt[1]}`,
-            size: size,
-            height: pt[2] ?? "",
-            //feature: feature,
-            parts: parts,
-            cloth: cloth,
-            headboard:headboard,
-            lid:lid,
-            qty: item[2]
-        };
-     
-        
-        return { id:item[0], type, size, cloth, price:item[2], qty:item[3], cat:newItem.nmodel, model:newItem.model }
-    }
+    //###############################
 
     checkSpecials(sale_date,item){
         let quee_time = 7
@@ -352,146 +382,7 @@ class App{
         return this.checkDeadline(sale_date,quee_time).deadline;
 
     }
-
-    genDetailsList(data, containerId, groupKey = null) {
-    if (!data || Object.keys(data).length === 0) return;
-
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    const entries = Object.entries(data);
-    let lastGroupValue = null;
-
-    entries.forEach(([id, obj]) => {
-        const order = new StringRegistry("orders").getValueById(id)
-
-        const currentGroupValue = groupKey ? (obj[groupKey] || "") : "";
-
-        if (groupKey && currentGroupValue !== lastGroupValue && currentGroupValue !== "") {
-            const spacer = document.createElement('div');
-            spacer.style.height = "20px";
-            container.appendChild(spacer);
-
-            const groupHeader = document.createElement('h3');
-            groupHeader.textContent = currentGroupValue;
-            container.appendChild(groupHeader);
-
-            lastGroupValue = currentGroupValue;
-        }
-
-        const details = document.createElement('details');
-        details.dataset.id = order
-        details.draggable = true;
-
-        const summary = document.createElement('summary');
-        summary.classList.toggle("red")
-        const dateDisplay = obj.sale_date ? obj.sale_date.replace(/\/20(\d{2})$/, "/$1") : "";
-
-        summary.innerHTML = `
-            <span><b>${order} Cliente ${obj.client || ''}</b> - ${obj.obs || ''}</span>
-            <em>${dateDisplay}</em>
-        `;
-
-        const content = document.createElement('div');
-        content.style.padding = "10px";
-        
-        Object.entries(obj).forEach(([key, val]) => {
-            if (key !== groupKey) {
-                const p = document.createElement('p');
-                const displayVal = Array.isArray(val) ? val.join(", ") : val;
-                p.innerHTML = `<strong>${key.toUpperCase()}:</strong> ${displayVal}`;
-                content.appendChild(p);
-            }
-        });
-
-        details.appendChild(summary);
-        details.appendChild(content);
-        container.appendChild(details);
-
-        
-    });
-}
-
-getOrderData(containerId, originalData) {
-    const container = document.getElementById(containerId);
-    const items = container.querySelectorAll('details');
-    const orderedData = {};
-
-    items.forEach(item => {
-        const id = item.dataset.id;
-        if (originalData[id]) {
-            orderedData[id] = originalData[id];
-        }
-    });
-
-    return orderedData;
-}
-
-    genTable(data, containerId, groupKey = null) {
-        if (!data || Object.keys(data).length === 0) return;
-
-        const container = document.getElementById(containerId);
-        if (!container) return;
-
-        const entries = Object.entries(data);
-        const firstPayload = entries[0][1];
-        const dataHeaders = Object.keys(firstPayload);
-        
-        const displayHeaders = groupKey ? dataHeaders.filter(h => h !== groupKey) : dataHeaders;
-        const finalHeaders = ["ID", ...displayHeaders];
-
-        const table = document.createElement('table');
-        const thead = table.createTHead();
-        const headerRow = thead.insertRow();
-
-        finalHeaders.forEach(h => {
-            const th = document.createElement('th');
-            th.textContent = h.toUpperCase();
-            headerRow.appendChild(th);
-        });
-
-        const tbody = table.createTBody();
-        let lastGroupValue = null;
-
-        entries.forEach(([id, obj]) => {
-            if (groupKey && obj[groupKey] !== undefined) {
-                const currentGroupValue = obj[groupKey] || "";
-
-                if (currentGroupValue !== lastGroupValue && currentGroupValue !== "") {
-                    const spacerRow = tbody.insertRow();
-                    const spacerCell = spacerRow.insertCell();
-                    spacerCell.colSpan = finalHeaders.length;
-                    spacerCell.innerHTML = "&nbsp;"; 
-
-                    const groupRow = tbody.insertRow();
-                    const cell = groupRow.insertCell();
-                    cell.colSpan = finalHeaders.length;
-                    cell.textContent = currentGroupValue;
-                    
-                    lastGroupValue = currentGroupValue;
-                }
-            }
-
-            const row = tbody.insertRow();
-            const idCell = row.insertCell();
-            idCell.textContent = id;
-
-            displayHeaders.forEach(key => {
-                const cell = row.insertCell();
-                const val = obj[key] ?? "";
-                cell.textContent = Array.isArray(val) ? val.join(", ") : val;
-            });
-        });
-
-        container.appendChild(table);
-    }
-
-    generateList(list){
-        list.forEach(item => {
-            //console.log(item)
-        })
-    }
-
+    
     checkDeadline(entry, quee_time){
         
         const [d, m, y] = entry.split("/").map(Number);
@@ -554,6 +445,65 @@ getOrderData(containerId, originalData) {
     formatYear(dateStr) {
         if (!dateStr) return "";
         return dateStr.replace(/\/(\d{2})$/, "/20$1");
+    }
+
+    genTable(data, containerId, groupKey = null) {
+        if (!data || Object.keys(data).length === 0) return;
+
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const entries = Object.entries(data);
+        const firstPayload = entries[0][1];
+        const dataHeaders = Object.keys(firstPayload);
+        
+        const displayHeaders = groupKey ? dataHeaders.filter(h => h !== groupKey) : dataHeaders;
+        const finalHeaders = ["ID", ...displayHeaders];
+
+        const table = document.createElement('table');
+        const thead = table.createTHead();
+        const headerRow = thead.insertRow();
+
+        finalHeaders.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h.toUpperCase();
+            headerRow.appendChild(th);
+        });
+
+        const tbody = table.createTBody();
+        let lastGroupValue = null;
+
+        entries.forEach(([id, obj]) => {
+            if (groupKey && obj[groupKey] !== undefined) {
+                const currentGroupValue = obj[groupKey] || "";
+
+                if (currentGroupValue !== lastGroupValue && currentGroupValue !== "") {
+                    const spacerRow = tbody.insertRow();
+                    const spacerCell = spacerRow.insertCell();
+                    spacerCell.colSpan = finalHeaders.length;
+                    spacerCell.innerHTML = "&nbsp;"; 
+
+                    const groupRow = tbody.insertRow();
+                    const cell = groupRow.insertCell();
+                    cell.colSpan = finalHeaders.length;
+                    cell.textContent = currentGroupValue;
+                    
+                    lastGroupValue = currentGroupValue;
+                }
+            }
+
+            const row = tbody.insertRow();
+            const idCell = row.insertCell();
+            idCell.textContent = id;
+
+            displayHeaders.forEach(key => {
+                const cell = row.insertCell();
+                const val = obj[key] ?? "";
+                cell.textContent = Array.isArray(val) ? val.join(", ") : val;
+            });
+        });
+
+        container.appendChild(table);
     }
 
 }

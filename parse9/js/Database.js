@@ -14,54 +14,40 @@ export default class Database {
     return this;
   }
 
-  upsert(item, key = 'id') {
-    const data = JSON.parse(localStorage.getItem(this.key)) || {};
+  insert(value) {
+    if (!this.data || Array.isArray(this.data)) {
+        this.data = {};
+    }
+
+    const keys = Object.keys(this.data).map(Number).filter(n => !isNaN(n));
+    const maxId = keys.length > 0 ? Math.max(...keys) : 0;
+    const nextId = (maxId + 1).toString();
+
     const isObject = typeof value === 'object' && value !== null;
+    this.data[nextId] = isObject ? value : String(value || "").trim();
     
-    const existingEntry = Object.entries(data).find(([id, val]) => {
-      if (key && isObject && typeof val === 'object') {
-        return val[key] === value[key];
-      }
-      return JSON.stringify(val) === JSON.stringify(value);
-    });
-
-    if (existingEntry && id === null) {
-      return existingEntry[0];
-    }
-
-    const idToUse = id !== null ? id : (Object.keys(data).length + 1);
-    
-    data[idToUse] = isObject ? value : String(value || "").trim();
-    localStorage.setItem(this.key, JSON.stringify(data));
-
-    return String(idToUse);
-    if (typeof item !== 'object') {
-      item = { [key]: item };
-    }
-
-    const index = this.data.findIndex(elem => elem[key] === item[key]);
-
-    if (index === -1) {
-      this.data.push(item);
-      this.save();
-      return this.data.length - 1;
-    } else {
-      this.data[index] = { ...this.data[index], ...item };
-      this.save();
-      return index;
-    }
+    this.save();
+    return nextId;
   }
 
-  insert(value) {
-    const index = this.data.indexOf(value);
-
-    if (index === -1) {
-      this.data.push({[this.data.length + 1]:value});
-      this.save();
-      return this.data.length - 1;
+  upsert(value, key = null) {
+    if (!this.data || Array.isArray(this.data)) {
+        this.data = {};
     }
 
-    return index;
+    const isObject = typeof value === 'object' && value !== null;
+
+    const existingId = Object.keys(this.data).find(idKey => {
+        const savedValue = this.data[idKey];
+        if (key && isObject && typeof savedValue === 'object') {
+            return savedValue[key] === value[key];
+        }
+        return JSON.stringify(savedValue) === JSON.stringify(value);
+    });
+
+    if (existingId) return existingId;
+
+    return this.insert(value);
   }
 
     create(data) {
@@ -114,6 +100,3 @@ export default class Database {
     }
 
 }
-
-
-

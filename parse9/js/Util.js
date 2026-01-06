@@ -34,29 +34,31 @@ export default class Util{
         return `${ano}-${mes}-${dia}`;
     }
 
+    static get alphabet(){
+        return "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    }
+
     static encode(numInput) {
-        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        const base = alphabet.length;
+        const base = this.alphabet.length;
         let num = parseInt(numInput);
         let result = "";
 
         for (let i = 0; i < 2; i++) {
             let remainder = num % base;
-            result = alphabet[remainder] + result;
+            result = this.alphabet[remainder] + result;
             num = Math.floor(num / base);
         }
         return result;
     }
 
     static decode(strInput) {
-        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        const base = alphabet.length;
+        const base = this.alphabet.length;
         let str = String(strInput);
         let num = 0;
 
         for (let i = 0; i < str.length; i++) {
             let char = str[i];
-            let charIndex = alphabet.indexOf(char);
+            let charIndex = this.alphabet.indexOf(char);
             num = num * base + charIndex;
         }
         return num;
