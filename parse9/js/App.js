@@ -32,24 +32,21 @@ class App{
 
         //CHECK DATABASE
         //UPDATE ORDERLIST
-
+        this.render()
 
         this.file = new Reader("file", this.onFileChange.bind(this))
         this.onFileChange()
     }
 
-    upsert(db, data, id = null){
-        const database = new Database(db)
-        if(id)
-            return database.upsert(data, id)
-        else
-            return database.insert(data)
+    render(){
+        const data = new Database("orders").readAll()
+        this.genDetailsList(data[1], "draggable-list")
     }
 
     onFileChange(data) {
         if (!data) return
 
-        const obj    = []
+        const obj    = {}
         const total  = []
         const title  = data?.[0]?.[0] ?? ''
         const range  = data?.[0]?.[1] ?? ''
@@ -59,25 +56,29 @@ class App{
 
         let current = null
 
-        if(title.includes("Relatório"))
-            data.forEach((item, index) => {
+        if(title.includes("Relatório")){
+            data.forEach((row, index) => {
 
-                if(typeof item[0] == 'string' && item[0].includes("Pedido: ")){
+                if(typeof row[0] == 'string' && row[0].includes("Pedido: ")){
                 
-                    const ref       = item[1] ? Number(item[1]) : ''
-                    const obs       = typeof data[index+1][0] === 'string' ? data[index+1][0] : ''
+                    const ref       = row[1] ? Number(row[1]) : ''
+                    const obs      = typeof data[index+1][0] === 'string' ? data[index+1][0] : ''
+                    
                     const priority  = obs.toUpperCase().includes("URGENTE") ? 1 : 0
                     const pickup    = obs.toUpperCase().includes("BUSCAR") ? 1 : 0
-                    const order     = this.orderParse(item[0])
+
+                    const order     = this.orderParse(row[0])
+                    current = order.op
 
                     let client      = {
                         name:   order.client,
                         alias:  "",
                         route:  ""
                     }
-                    
 
-                    current = order.op
+                    client       = new Database("clients").upsert(client, "name");
+                    const seller = new Database("sellers").upsert(order.seller);
+                    const info   = obs ? new Database("observations").update(current,obs) : ''
 
                     obj[current]   = {
                         client,
@@ -85,10 +86,9 @@ class App{
                         deadline:   "",
                         sale_date:  order.sale_date,
                         invoice:    order.invoice,
-                        seller:     order.seller,
 
-                        ref, obs, priority, pickup,
-                        
+                        seller, ref, obs:info, priority, pickup,
+
                         items:{},
                         payment:{}
                     }
@@ -97,57 +97,56 @@ class App{
                 }
 
                 if(current){
-                    if( item.length === 5 && Number.isInteger(item[0])){
-                        const itemParsed = this.itemParse(item)
+                    if( row.length === 5 && Number.isInteger(row[0])){
+                        const itemParsed = this.itemParse(row)
 
-                        const test = new Database("modelsx").upsert(itemParsed.type + " " + itemParsed.model)
-                        console.log(test)
-                        const models     = new StringRegistry('models');
-                        const model      = models.getOrRegister(itemParsed.type + " " + itemParsed.model)
+                        //const type      = new Database("types").upsert(itemParsed.type)
+                        const model     = new Database("models").upsert(itemParsed.type+" "+itemParsed.model)
+                        const coat      = new Database("coats").upsert(itemParsed.coat)
+                        //const color      = new Database("coats").upsert(itemParsed.color)
+                        const size      = new Database("sizes").upsert(itemParsed.size)
 
-                        const coats      = new StringRegistry('coats');
-                        const coat       = coats.getOrRegister(itemParsed.coat)
-
-                        const sizes      = new StringRegistry('sizes');
-                        const size       = sizes.getOrRegister(itemParsed.size)
                         
-                        const register   = 
+                        const register   =
+                            Util.encode(obj[current].client, 2)+
                             current+
+                            //Util.encode(type)+
                             Util.encode(model)+
-                            Util.encode(coat)+
-                            Util.encode(size)+
-                            item[3] //QTY
+                            String(size).padStart(2, '0')+
+                            Util.encode(coat, 2)+
+                            String(row[3]).padStart(3, '0');
 
-                        const product_temp    = {
-                            type:        itemParsed.type,
-                            model:       itemParsed.model,
-                            coat:        itemParsed.coat,
-                            size:        itemParsed.size,
-                            qty:         item[3],
-                            price:       item[2]
+                        const description    = {
+                            //type,
+                            model, coat, size,
+                            qty:         row[3],
+                            price:       row[2]
                         }
 
                         total.push(register)
-                        const products = new StringRegistry('products');
-                        const product  = products.getOrRegister(register);
+                        const product  = new Database("products").upsert(register)
 
-                        obj[current].deadline = this.checkSpecials(obj[current].sale_date,item[1])
-                        obj[current].items[register] = product_temp
-                        /* 
-                        obj[current].items[register]["price"] = item[2] */
+                        obj[current].deadline = this.checkSpecials(obj[current].sale_date,row[1])
+                        obj[current].items[register] = description
                         
                         return
                     }
-                    if( item.length === 4 && item[3] && String(item[3] || "").includes("Valor")){
+
+                    if( row.length === 4 && row[3] && String(row[3] || "").includes("Valor")){
                         const payments   = new StringRegistry('payments');
-                        const payment    = payments.getOrRegister(item[1])
+                        const payment    = payments.getOrRegister(row[1])
                         obj[current].payment["type"]  = payment
-                        obj[current].payment["value"] = item[2]
+                        obj[current].payment["value"] = row[2]
+
                         return
                     }
+
                 }
 
             })
+            new Database("orders").insert(obj)
+            
+        }
 
         const prods = JSON.parse(localStorage.getItem("orders"))
         console.log(obj)
@@ -277,6 +276,18 @@ class App{
 
         return { type: (type || "BOX"), model: (model || "GRAN") }
     }
+
+/*  decodeOrder(order){
+        const regex = /^([A-Z]{2})(\d{4})([A-Z]{1})(\d{2})([A-Z]{2})(\d{3})$/;
+
+        const match = order.match(regex);
+
+        if (match) {
+            const [full, client, op, model, size, coat, qty] = match;
+            
+            return {client:Util.decode(client), op:Number(op), model:Util.decode(model), size:Number(size), coat:Util.decode(coat), qty:Number(qty)}; 
+        }
+    } */
     
     //###############################
 
@@ -315,7 +326,7 @@ class App{
             const dateDisplay = obj.sale_date ? obj.sale_date.replace(/\/20(\d{2})$/, "/$1") : "";
 
             summary.innerHTML = `
-                <span><b>${order} Cliente ${obj.client || ''}</b> - ${obj.obs || ''}</span>
+                <span><b>${id} ${ new Database("clients").read(obj.client).name || ''}</b> - ${obj.obs || ''}</span>
                 <em>${dateDisplay}</em>
             `;
 

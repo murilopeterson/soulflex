@@ -35,15 +35,15 @@ export default class Util{
     }
 
     static get alphabet(){
-        return "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        return "AZBYCXDWEVFUGTHSIRJQKPLOMN19375"
     }
 
-    static encode(numInput) {
+    static encode(numInput, qty = 1) {
         const base = this.alphabet.length;
         let num = parseInt(numInput);
         let result = "";
 
-        for (let i = 0; i < 2; i++) {
+        for (let i = 0; i < qty; i++) {
             let remainder = num % base;
             result = this.alphabet[remainder] + result;
             num = Math.floor(num / base);

@@ -61,10 +61,13 @@ export default class Database {
     }
 
     update(index, data) {
-        if (this.data[index]) {
-            this.data[index] = { ...this.data[index], ...data };
-            this.save();
+        if (!this.data || Array.isArray(this.data)) {
+            this.data = {};
         }
+
+        this.data[index] = String(data || "").trim();
+        this.save();
+
         return this;
     }
 

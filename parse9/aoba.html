@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Glass CRUD</title>
+    <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet"> -->
+    <style>
+        :root {
+            --bg: #0a0c10;
+            --glass: rgba(17, 25, 40, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.125);
+            --accent: #00d2ff;
+            --text-main: #ffffff;
+            --text-dim: #a0aec0;
+            --danger: #ff4d4d;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1a202c 0%, #0a0c10 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        /* Container Principal com Efeito Vidro */
+        .glass-panel {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--glass);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        }
+
+        h2 {
+            margin: 0 0 20px 0;
+            font-weight: 600;
+            letter-spacing: -1px;
+            color: #fff;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        /* Área de Controles Superiores */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        select, input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: #fff;
+            padding: 12px 15px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent);
+        }
+
+        /* Botões Estilizados */
+        button {
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #fff;
+            color: #000;
+            transform: translateY(-2px);
+        }
+
+        .btn-accent { background: var(--accent); color: #000; border: none; }
+        .btn-accent:hover { background: #fff; color: #000; }
+
+        .btn-danger { color: var(--danger); border-color: rgba(255, 77, 77, 0.3); }
+        .btn-danger:hover { background: var(--danger); color: #fff; }
+
+        /* Formulário */
+        .form-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: end;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        .input-group label { font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600; }
+
+        /* Tabela Estilo Glass */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            font-size: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 15px;
+            border-top: 1px solid var(--glass-border);
+            font-size: 14px;
+        }
+
+        tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+        .id-badge {
+            font-family: monospace;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .actions { display: flex; gap: 8px; justify-content: flex-end; }
+    </style>
+</head>
+<body>
+
+    <div class="glass-panel">
+        <div class="top-bar">
+            <h2>Storage Manager</h2>
+            <div style="display:flex; gap:10px">
+                <select id="keySelect" onchange="app.switchTable(this.value)"></select>
+                <button onclick="app.createTable()">+ New</button>
+                <button class="btn-danger" onclick="app.deleteTable()">Drop</button>
+            </div>
+        </div>
+
+        <div id="app"></div>
+    </div>
+
+    <script>
+        class StorageManager {
+            constructor(containerId) {
+                this.container = document.getElementById(containerId);
+                this.activeKey = null;
+                this.editId = null;
+                this.init();
+            }
+
+            init() {
+                const keys = Object.keys(localStorage);
+                this.updateSelect(keys);
+                if (keys.length > 0 && !this.activeKey) this.switchTable(keys[0]);
+                else this.render();
+            }
+
+            updateSelect(keys) {
+                const select = document.getElementById('keySelect');
+                select.innerHTML = keys.map(k => `<option value="${k}" ${k === this.activeKey ? 'selected' : ''}>${k}</option>`).join('');
+                if (!keys.length) select.innerHTML = '<option value="">No Tables</option>';
+            }
+
+            switchTable(key) {
+                this.activeKey = key;
+                this.editId = null;
+                this.load();
+            }
+
+            load() {
+                if (!this.activeKey) return;
+                this.data = JSON.parse(localStorage.getItem(this.activeKey)) || {};
+                const first = Object.values(this.data)[0];
+                this.isObject = first && typeof first === 'object';
+                this.columns = this.isObject ? Object.keys(first) : ['value'];
+                this.render();
+            }
+
+            save(e) {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                let entry;
+                if (this.isObject) {
+                    entry = {};
+                    this.columns.forEach(c => entry[c] = fd.get(c));
+                } else {
+                    entry = fd.get('value');
+                }
+                const id = this.editId || (Math.max(0, ...Object.keys(this.data).map(Number)) + 1).toString();
+                this.data[id] = entry;
+                this.editId = null;
+                this.persist();
+            }
+
+            persist() {
+                localStorage.setItem(this.activeKey, JSON.stringify(this.data));
+                this.load();
+            }
+
+            deleteRecord(id) {
+                if(confirm("Delete record?")) { delete this.data[id]; this.persist(); }
+            }
+
+            deleteTable() {
+                if(this.activeKey && confirm("Drop table?")) {
+                    localStorage.removeItem(this.activeKey);
+                    this.activeKey = null;
+                    this.init();
+                }
+            }
+
+            createTable() {
+                const name = prompt("Table name:");
+                if(name) {
+                    const complex = confirm("Multiple fields (Object)?");
+                    const init = complex ? {"1": {"name": "Sample"}} : {"1": "Sample"};
+                    localStorage.setItem(name, JSON.stringify(init));
+                    this.activeKey = name;
+                    this.init();
+                }
+            }
+
+            setEdit(id) {
+                this.editId = id;
+                this.render();
+                const item = this.data[id];
+                this.columns.forEach(c => {
+                    const input = this.container.querySelector(`[name="${c}"]`);
+                    if(input) input.value = this.isObject ? item[c] : item;
+                });
+            }
+
+            render() {
+                if (!this.activeKey) {
+                    this.container.innerHTML = `<p style="color:var(--text-dim)">Click "+ New" to create a table.</p>`;
+                    return;
+                }
+
+                this.container.innerHTML = `
+                    <form onsubmit="app.save(event)" class="form-section">
+                        ${this.columns.map(c => `
+                            <div class="input-group">
+                                <label>${c}</label>
+                                <input name="${c}" required>
+                            </div>
+                        `).join('')}
+                        <div class="actions">
+                            <button type="submit" class="btn-accent">${this.editId ? 'Update' : 'Add'}</button>
+                            ${this.editId ? `<button type="button" onclick="app.load()">✕</button>` : ''}
+                        </div>
+                    </form>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    ${this.columns.map(c => `<th>${c}</th>`).join('')}
+                                    <th style="text-align:right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(this.data).map(([id, val]) => `
+                                    <tr>
+                                        <td><span class="id-badge">${id}</span></td>
+                                        ${this.isObject ? this.columns.map(c => `<td>${val[c] || ''}</td>`).join('') : `<td>${val}</td>`}
+                                        <td class="actions">
+                                            <button onclick="app.setEdit('${id}')">Edit</button>
+                                            <button class="btn-danger" onclick="app.deleteRecord('${id}')">Del</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
+            }
+        }
+
+        const app = new StorageManager('app');
+    </script>
+</body>
+</html>
