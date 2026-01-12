@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dark Glass CRUD</title>
-    <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet"> -->
+    <title>Master Detail Cascade CRUD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0a0c10;
@@ -14,6 +14,7 @@
             --text-main: #ffffff;
             --text-dim: #a0aec0;
             --danger: #ff4d4d;
+            --success: #00ff88;
         }
 
         body {
@@ -25,126 +26,86 @@
             min-height: 100vh;
         }
 
-        /* Container Principal com Efeito Vidro */
         .glass-panel {
             max-width: 900px;
             margin: 0 auto;
             background: var(--glass);
-            backdrop-filter: blur(16px) saturate(180%);
-            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            backdrop-filter: blur(20px);
             border-radius: 20px;
             border: 1px solid var(--glass-border);
             padding: 30px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
         }
 
-        h2 {
-            margin: 0 0 20px 0;
-            font-weight: 600;
-            letter-spacing: -1px;
-            color: #fff;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        }
-
-        /* Área de Controles Superiores */
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        select, input {
+        /* Top Navigation */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        select, button {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
-            border-radius: 10px;
+            border-radius: 8px;
             color: #fff;
-            padding: 12px 15px;
-            font-size: 14px;
-            outline: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        button:hover { background: #fff; color: #000; }
+        .btn-accent { background: var(--accent); color: #000; border: none; font-weight: 600; }
+
+        /* Item List Styling */
+        .item-list { display: flex; flex-direction: column; gap: 15px; }
+        
+        .item-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            overflow: hidden;
             transition: 0.3s;
         }
 
-        input:focus {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--accent);
+        .item-header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
         }
 
-        /* Botões Estilizados */
-        button {
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            padding: 12px 20px;
-            border-radius: 10px;
-            border: 1px solid var(--glass-border);
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            transition: all 0.3s ease;
-        }
+        .id-label { font-family: monospace; color: var(--accent); font-weight: bold; font-size: 14px; }
+        .item-summary { color: var(--text-dim); font-size: 12px; margin-left: 15px; flex-grow: 1; }
 
-        button:hover {
-            background: #fff;
-            color: #000;
-            transform: translateY(-2px);
-        }
-
-        .btn-accent { background: var(--accent); color: #000; border: none; }
-        .btn-accent:hover { background: #fff; color: #000; }
-
-        .btn-danger { color: var(--danger); border-color: rgba(255, 77, 77, 0.3); }
-        .btn-danger:hover { background: var(--danger); color: #fff; }
-
-        /* Formulário */
-        .form-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-            align-items: end;
-        }
-
-        .input-group { display: flex; flex-direction: column; gap: 8px; }
-        .input-group label { font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600; }
-
-        /* Tabela Estilo Glass */
-        .table-container {
-            overflow-x: auto;
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            font-size: 12px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-        }
-
-        td {
-            padding: 15px;
+        /* Nested Form Styling */
+        .item-content {
+            padding: 20px;
             border-top: 1px solid var(--glass-border);
-            font-size: 14px;
+            background: rgba(0, 0, 0, 0.2);
         }
 
-        tr:hover { background: rgba(255, 255, 255, 0.03); }
+        details { margin: 8px 0; }
+        summary { 
+            padding: 8px; font-size: 12px; color: var(--accent); cursor: pointer; 
+            list-style: none; display: flex; align-items: center; gap: 8px;
+        }
+        summary::before { content: "▹"; }
+        details[open] > summary::before { content: "▿"; }
 
-        .id-badge {
-            font-family: monospace;
-            color: var(--accent);
-            font-weight: bold;
+        .cascade-wrapper { padding-left: 20px; border-left: 1px dashed var(--glass-border); margin-left: 10px; }
+
+        .input-group { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }
+        .input-group label { font-size: 10px; text-transform: uppercase; color: var(--text-dim); }
+        input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 5px;
+            color: #fff;
+            padding: 8px;
+            font-size: 13px;
         }
 
-        .actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .form-actions { margin-top: 15px; display: flex; gap: 10px; }
+        .btn-save { background: var(--success); color: #000; border: none; }
+        .btn-danger { color: var(--danger); border-color: rgba(255,77,77,0.3); }
+
+        pre { font-size: 11px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; color: #a0aec0; overflow-x: auto; }
     </style>
 </head>
 <body>
@@ -154,18 +115,20 @@
             <h2>Storage Manager</h2>
             <div style="display:flex; gap:10px">
                 <select id="keySelect" onchange="app.switchTable(this.value)"></select>
-                <button onclick="app.createTable()">+ New</button>
+                <button onclick="app.createTable()">+ Table</button>
                 <button class="btn-danger" onclick="app.deleteTable()">Drop</button>
             </div>
         </div>
 
-        <div id="app"></div>
+        <button class="btn-accent" style="width: 100%; margin-bottom: 20px;" onclick="app.addItem()">+ Add New Entry</button>
+        
+        <div id="app" class="item-list"></div>
     </div>
 
     <script>
         class StorageManager {
-            constructor(containerId) {
-                this.container = document.getElementById(containerId);
+            constructor(id) {
+                this.container = document.getElementById(id);
                 this.activeKey = null;
                 this.editId = null;
                 this.init();
@@ -173,15 +136,10 @@
 
             init() {
                 const keys = Object.keys(localStorage);
-                this.updateSelect(keys);
-                if (keys.length > 0 && !this.activeKey) this.switchTable(keys[0]);
+                const s = document.getElementById('keySelect');
+                s.innerHTML = keys.map(k => `<option value="${k}" ${k===this.activeKey?'selected':''}>${k}</option>`).join('');
+                if (keys.length && !this.activeKey) this.switchTable(keys[0]);
                 else this.render();
-            }
-
-            updateSelect(keys) {
-                const select = document.getElementById('keySelect');
-                select.innerHTML = keys.map(k => `<option value="${k}" ${k === this.activeKey ? 'selected' : ''}>${k}</option>`).join('');
-                if (!keys.length) select.innerHTML = '<option value="">No Tables</option>';
             }
 
             switchTable(key) {
@@ -192,27 +150,92 @@
 
             load() {
                 if (!this.activeKey) return;
-                this.data = JSON.parse(localStorage.getItem(this.activeKey)) || {};
-                const first = Object.values(this.data)[0];
-                this.isObject = first && typeof first === 'object';
-                this.columns = this.isObject ? Object.keys(first) : ['value'];
+                try {
+                    this.data = JSON.parse(localStorage.getItem(this.activeKey)) || {};
+                } catch { this.data = {}; }
                 this.render();
             }
 
-            save(e) {
-                e.preventDefault();
-                const fd = new FormData(e.target);
-                let entry;
-                if (this.isObject) {
-                    entry = {};
-                    this.columns.forEach(c => entry[c] = fd.get(c));
-                } else {
-                    entry = fd.get('value');
+            generateFormFields(obj, prefix = '') {
+                if (typeof obj !== 'object' || obj === null) {
+                    const path = prefix || 'value';
+                    return `<div class="input-group"><label>${path.split('.').pop()}</label><input name="${path}" value="${obj}"></div>`;
                 }
-                const id = this.editId || (Math.max(0, ...Object.keys(this.data).map(Number)) + 1).toString();
-                this.data[id] = entry;
+
+                return Object.entries(obj).map(([key, val]) => {
+                    const fullPath = prefix ? `${prefix}.${key}` : key;
+                    if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+                        return `<details><summary>${key}</summary><div class="cascade-wrapper">${this.generateFormFields(val, fullPath)}</div></details>`;
+                    }
+                    return `<div class="input-group"><label>${key}</label><input name="${fullPath}" value="${val}"></div>`;
+                }).join('');
+            }
+
+            unflatten(fd) {
+                const result = {};
+                for (let [path, value] of fd.entries()) {
+                    if (path === 'value' && fd.size === 1) return value;
+                    const keys = path.split('.');
+                    keys.reduce((acc, k, i) => acc[k] || (acc[k] = keys[i+1] ? {} : value), result);
+                }
+                return result;
+            }
+
+            save(id, event) {
+                event.preventDefault();
+                const fd = new FormData(event.target);
+                this.data[id] = this.unflatten(fd);
+                localStorage.setItem(this.activeKey, JSON.stringify(this.data));
                 this.editId = null;
-                this.persist();
+                this.load();
+            }
+
+            addItem() {
+                const id = (Math.max(0, ...Object.keys(this.data).map(Number)) + 1).toString();
+                const first = Object.values(this.data)[0];
+                // Clone structure of first item but empty values
+                const newItem = typeof first === 'object' ? JSON.parse(JSON.stringify(first, (k,v) => typeof v === 'object' ? v : "")) : "";
+                this.data[id] = newItem;
+                this.editId = id;
+                this.render();
+            }
+
+            render() {
+                if (!this.activeKey) return this.container.innerHTML = "No active table.";
+
+                this.container.innerHTML = Object.entries(this.data).map(([id, val]) => {
+                    const isEditing = this.editId === id;
+                    const summary = typeof val === 'object' ? JSON.stringify(val).substring(0, 50) + "..." : val;
+
+                    return `
+                        <div class="item-card">
+                            <div class="item-header">
+                                <span class="id-label">#${id}</span>
+                                <span class="item-summary">${isEditing ? 'Editing...' : summary}</span>
+                                <div style="display:flex; gap:8px">
+                                    <button onclick="app.editId = app.editId === '${id}' ? null : '${id}'; app.render()">${isEditing ? 'Close' : 'Edit'}</button>
+                                    <button class="btn-danger" onclick="if(confirm('Delete?')){delete app.data['${id}']; app.persist();}">Del</button>
+                                </div>
+                            </div>
+                            
+                            ${isEditing ? `
+                                <div class="item-content">
+                                    <form onsubmit="app.save('${id}', event)">
+                                        ${this.generateFormFields(val)}
+                                        <div class="form-actions">
+                                            <button type="submit" class="btn-save">Save Changes</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            ` : `
+                                <details style="border:none; background:transparent">
+                                    <summary style="padding: 10px 20px; font-size:11px">View Raw Data</summary>
+                                    <div style="padding: 0 20px 20px 20px"><pre>${JSON.stringify(val, null, 2)}</pre></div>
+                                </details>
+                            `}
+                        </div>
+                    `;
+                }).join('');
             }
 
             persist() {
@@ -220,82 +243,17 @@
                 this.load();
             }
 
-            deleteRecord(id) {
-                if(confirm("Delete record?")) { delete this.data[id]; this.persist(); }
-            }
-
-            deleteTable() {
-                if(this.activeKey && confirm("Drop table?")) {
-                    localStorage.removeItem(this.activeKey);
-                    this.activeKey = null;
-                    this.init();
-                }
-            }
-
             createTable() {
-                const name = prompt("Table name:");
+                const name = prompt("Table Name:");
                 if(name) {
-                    const complex = confirm("Multiple fields (Object)?");
-                    const init = complex ? {"1": {"name": "Sample"}} : {"1": "Sample"};
-                    localStorage.setItem(name, JSON.stringify(init));
+                    localStorage.setItem(name, JSON.stringify({ "1": { name: "Sample", details: { type: "Complex" } } }));
                     this.activeKey = name;
                     this.init();
                 }
             }
 
-            setEdit(id) {
-                this.editId = id;
-                this.render();
-                const item = this.data[id];
-                this.columns.forEach(c => {
-                    const input = this.container.querySelector(`[name="${c}"]`);
-                    if(input) input.value = this.isObject ? item[c] : item;
-                });
-            }
-
-            render() {
-                if (!this.activeKey) {
-                    this.container.innerHTML = `<p style="color:var(--text-dim)">Click "+ New" to create a table.</p>`;
-                    return;
-                }
-
-                this.container.innerHTML = `
-                    <form onsubmit="app.save(event)" class="form-section">
-                        ${this.columns.map(c => `
-                            <div class="input-group">
-                                <label>${c}</label>
-                                <input name="${c}" required>
-                            </div>
-                        `).join('')}
-                        <div class="actions">
-                            <button type="submit" class="btn-accent">${this.editId ? 'Update' : 'Add'}</button>
-                            ${this.editId ? `<button type="button" onclick="app.load()">✕</button>` : ''}
-                        </div>
-                    </form>
-
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    ${this.columns.map(c => `<th>${c}</th>`).join('')}
-                                    <th style="text-align:right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${Object.entries(this.data).map(([id, val]) => `
-                                    <tr>
-                                        <td><span class="id-badge">${id}</span></td>
-                                        ${this.isObject ? this.columns.map(c => `<td>${val[c] || ''}</td>`).join('') : `<td>${val}</td>`}
-                                        <td class="actions">
-                                            <button onclick="app.setEdit('${id}')">Edit</button>
-                                            <button class="btn-danger" onclick="app.deleteRecord('${id}')">Del</button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>`;
+            deleteTable() {
+                if(confirm("Drop table?")) { localStorage.removeItem(this.activeKey); this.activeKey = null; this.init(); }
             }
         }
 

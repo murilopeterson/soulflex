@@ -144,7 +144,7 @@ class App{
                 }
 
             })
-            new Database("orders").insert(obj)
+            new Database("orders").create(obj)
             
         }
 
@@ -326,7 +326,7 @@ class App{
             const dateDisplay = obj.sale_date ? obj.sale_date.replace(/\/20(\d{2})$/, "/$1") : "";
 
             summary.innerHTML = `
-                <span><b>${id} ${ new Database("clients").read(obj.client).name || ''}</b> - ${obj.obs || ''}</span>
+                <span><b>${id} ${ new Database("clients").read(obj.client).name || ''}</b> - ${new Database("observations").read(obj.obs) || ''}</span>
                 <em>${dateDisplay}</em>
             `;
 

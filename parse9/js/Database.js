@@ -51,7 +51,7 @@ export default class Database {
   }
 
     create(data) {
-        this.data.push(data);
+        this.data = data;
         this.save();
         return this.data.length - 1;
     }
@@ -68,7 +68,7 @@ export default class Database {
         this.data[index] = String(data || "").trim();
         this.save();
 
-        return this;
+        return index;
     }
 
     delete(index) {

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>OCR Pro - Analisador de Recibos</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        :root {
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent: #00f2fe;
+            --text-main: #e0e0e0;
+            --text-dim: #b0b0b0;
+        }
+
+        body {
+            background: #0f172a;
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .container { width: 100%; max-width: 900px; }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        h1, h2 { color: var(--accent); letter-spacing: 1px; }
+
+        .upload-area {
+            border: 2px dashed var(--glass-border);
+            padding: 40px; border-radius: 15px;
+            text-align: center; cursor: pointer; transition: 0.3s;
+        }
+        .upload-area:hover { border-color: var(--accent); background: rgba(0, 242, 254, 0.05); }
+
+        /* Estilo Collapse (Details/Summary) */
+        details {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        summary {
+            padding: 15px; cursor: pointer; font-weight: bold;
+            display: flex; justify-content: space-between; align-items: center;
+            list-style: none;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary:hover { background: rgba(255,255,255,0.05); }
+        summary .status-tag { font-size: 0.8em; color: var(--accent); }
+
+        .content { padding: 20px; border-top: 1px solid var(--glass-border); display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        .item-row { border-bottom: 1px solid rgba(255,255,255,0.05); padding: 8px 0; }
+        .item-grid { display: grid; grid-template-columns: 40px 1fr 100px 100px; gap: 10px; font-size: 0.9em; }
+        
+        .label { color: var(--text-dim); font-size: 0.8em; text-transform: uppercase; }
+        .val { font-weight: 500; }
+
+        .btn {
+            background: var(--accent); color: #000; border: none;
+            padding: 15px 30px; border-radius: 10px; font-weight: bold;
+            cursor: pointer; width: 100%; margin-top: 20px;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #procCanvas { display: none; }
+        .mini-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="glass-panel">
+        <h1>OCR BATCH</h1>
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <p>Selecione os recibos para análise em lote</p>
+            <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
+        </div>
+        <button id="btnProcessar" class="btn" disabled>ANALISAR TODOS</button>
+        <div id="statusMaster" style="margin-top: 15px; text-align: center;"></div>
+    </div>
+
+    <div id="listaResultados" class="container"></div>
+</div>
+
+<canvas id="procCanvas"></canvas>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const btnProcessar = document.getElementById('btnProcessar');
+    const listaResultados = document.getElementById('listaResultados');
+    const procCanvas = document.getElementById('procCanvas');
+    const ctx = procCanvas.getContext('2d');
+
+    let imagensParaProcessar = [];
+
+    fileInput.onchange = (e) => {
+        imagensParaProcessar = Array.from(e.target.files);
+        btnProcessar.disabled = false;
+        listaResultados.innerHTML = `<p style="text-align:center">Imagens carregadas: ${imagensParaProcessar.length}</p>`;
+    };
+
+    btnProcessar.onclick = async () => {
+        btnProcessar.disabled = true;
+        listaResultados.innerHTML = '';
+
+        for (let i = 0; i < imagensParaProcessar.length; i++) {
+            const file = imagensParaProcessar[i];
+            const text = await extrairTexto(file);
+            const dados = parsearDados(text);
+            exibirResultado(dados, URL.createObjectURL(file));
+        }
+        btnProcessar.disabled = false;
+    };
+
+    async function extrairTexto(file) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = async () => {
+                const escala = 3;
+                procCanvas.width = img.width * escala;
+                procCanvas.height = img.height * escala;
+                
+                // Filtro solicitado: Contraste 170 e Escala 3
+                ctx.filter = 'contrast(1.5) grayscale(100%)';
+                ctx.drawImage(img, 0, 0, procCanvas.width, procCanvas.height);
+                
+                const imageData = ctx.getImageData(0, 0, procCanvas.width, procCanvas.height);
+                const data = imageData.data;
+                for (let j = 0; j < data.length; j += 4) {
+                    const v = (data[j] * 0.3 + data[j+1] * 0.59 + data[j+2] * 0.11) < 170 ? 0 : 255;
+                    data[j] = data[j+1] = data[j+2] = v;
+                }
+                ctx.putImageData(imageData, 0, 0);
+
+                const { data: { text } } = await Tesseract.recognize(procCanvas.toDataURL(), 'por+eng', {
+                    workerParams: { tessedit_pageseg_mode: '6' }
+                });
+                resolve(text);
+            };
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
+    function parsearDados(text) {
+        const linhas = text.split('\n').map(l => l.trim()).filter(l => l !== "");
+        let dados = {
+            recibo: "---", vendedor: "---", cliente: "---",
+            obs: [], total: "---", data: "---", itens: []
+        };
+
+        let capturandoObs = false;
+
+        for (let i = 0; i < linhas.length; i++) {
+            let l = linhas[i];
+
+            // 1. Recibo e Vendedor
+            if (l.includes("RECIBO#")) {
+                dados.recibo = l;
+                dados.vendedor = linhas[i+1] || "---";
+            }
+
+            // 2. Cliente (âncora &)
+            if (l.startsWith('&')) {
+                dados.cliente = l.replace('&', '').trim();
+                capturandoObs = true; // Começa a capturar o que vem depois do cliente como OBS
+                continue;
+            }
+
+            // 3. Data e Total
+            if (l.toUpperCase().includes("TOTAL:")) dados.total = l.split(/TOTAL:/i)[1].trim();
+            if (l.includes(" de 202")) dados.data = l;
+
+            // 4. Itens (Lógica 2x / ox / 0x)
+            let linhaLimpa = l.replace(/^[ox0xX]+\s/gi, '2x ');
+            const matchItem = linhaLimpa.match(/^(\d+)x\s+(.+?)(?:\s+R\$\s*([\d.,]+)|$)/i);
+
+            if (matchItem) {
+                capturandoObs = false; // Parar OBS ao chegar nos itens
+                let qtd = matchItem[1];
+                let desc = matchItem[2];
+                let subtotal = matchItem[3] ? 'R$ ' + matchItem[3] : "---";
+                let unitario = subtotal;
+
+                // Se houver preço unitário na linha de baixo
+                if (parseInt(qtd) > 1 && linhas[i+1]?.includes("R$") && !linhas[i+1].includes("x")) {
+                    unitario = linhas[i+1].match(/R\$\s?([\d.,]+)/)?.[0] || subtotal;
+                    i++; 
+                }
+                dados.itens.push({ qtd, desc, unitario, subtotal });
+            } else if (capturandoObs && !l.includes("itens") && !l.includes("Qtd:")) {
+                // Se não é item nem cabeçalho, é Observação
+                dados.obs.push(l);
+            }
+        }
+        return dados;
+    }
+
+    function exibirResultado(d, thumb) {
+        const det = document.createElement('details');
+        det.innerHTML = `
+            <summary>
+                <div style="display:flex; align-items:center; gap:15px">
+                    <img src="${thumb}" class="mini-preview">
+                    <span>${d.recibo} - ${d.cliente}</span>
+                </div>
+                <div class="status-tag">${d.total}</div>
+            </summary>
+            <div class="content">
+                <div>
+                    <div class="label">Vendedor</div><div class="val">${d.vendedor}</div><br>
+                    <div class="label">Observação</div>
+                    <div class="val" style="font-size:0.85em; color:#888">${d.obs.join(' | ') || 'Nenhuma'}</div><br>
+                    <div class="label">Data / Hora</div><div class="val">${d.data}</div>
+                </div>
+                <div>
+                    <div class="label">Itens do Recibo</div>
+                    <div class="item-grid" style="font-weight:bold; color:var(--accent); margin-bottom:5px">
+                        <span>Qtd</span><span>Descrição</span><span>Unit.</span><span>Subtotal</span>
+                    </div>
+                    ${d.itens.map(it => `
+                        <div class="item-row item-grid">
+                            <span>${it.qtd}x</span>
+                            <span>${it.desc}</span>
+                            <span style="color:#aaa">${it.unitario}</span>
+                            <span style="font-weight:bold">${it.subtotal}</span>
+                        </div>
+                    `).join('')}
+                    <div class="val" style="text-align:right; margin-top:15px; font-size:1.2em; color:var(--accent)">
+                        TOTAL: ${d.total}
+                    </div>
+                </div>
+            </div>
+        `;
+        listaResultados.appendChild(det);
+    }
+</script>
+</body>
+</html>
