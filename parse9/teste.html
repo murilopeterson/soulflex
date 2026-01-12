@@ -2,31 +2,54 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Offline Form + Sheets</title>
+    <title>Formulário com Tabela</title>
     <style>
-        body { font-family: sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
         input { width: 100%; margin: 10px 0; padding: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; cursor: pointer; margin-top: 10px; }
+        button { padding: 10px; cursor: pointer; margin: 5px 0; width: 100%; }
         .sync-btn { background-color: #28a745; color: white; border: none; }
+        .get-btn { background-color: #007bff; color: white; border: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table, th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f4f4f4; }
     </style>
 </head>
 <body>
 
-    <h3>Cadastro Offline</h3>
+    <h3>Cadastro Offline (IndexedDB)</h3>
     <form id="meuForm">
         <input type="text" id="nome" placeholder="Nome" required>
         <input type="email" id="email" placeholder="E-mail" required>
         <button type="submit">Salvar Localmente</button>
     </form>
 
-    <button class="sync-btn" onclick="sincronizarDados()">Sincronizar com Google Sheets</button>
+    <hr>
+
+    <button class="sync-btn" onclick="sincronizarDados()">Sincronizar Dados Locais -> Planilha</button>
+    <button class="get-btn" onclick="buscarDadosDaPlanilha()">Carregar Dados da Planilha</button>
+    
     <p id="status"></p>
 
+    <div id="tabelaContainer">
+        <h4>Dados na Planilha:</h4>
+        <table id="tabelaDados">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+
     <script>
-        const SHEETS_URL = "SUA_URL_DO_APPS_SCRIPT_AQUI";
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbx_sW5Sl_i6pDyQFy2Tt0EOJP7kqOoyq2qsTSqBCYIKgo3p9uvI0YWZoWYxwO2WURke/exec"; 
         let db;
 
-        // 1. Abrir/Criar IndexedDB
+        // Configuração do IndexedDB
         const request = indexedDB.open("FormDB", 1);
         request.onupgradeneeded = e => {
             db = e.target.result;
@@ -34,56 +57,63 @@
         };
         request.onsuccess = e => db = e.target.result;
 
-        // 2. Salvar dados no IndexedDB
+        // Salvar no IndexedDB
         document.getElementById('meuForm').onsubmit = e => {
             e.preventDefault();
-            const novoItem = {
+            const transaction = db.transaction(["usuarios"], "readwrite");
+            transaction.objectStore("usuarios").add({
                 nome: document.getElementById('nome').value,
                 email: document.getElementById('email').value
-            };
-
-            const transaction = db.transaction(["usuarios"], "readwrite");
-            transaction.objectStore("usuarios").add(novoItem);
-            
+            });
             transaction.oncomplete = () => {
-                alert("Dados salvos no navegador!");
+                alert("Salvo offline!");
                 document.getElementById('meuForm').reset();
             };
         };
 
-        // 3. Sincronizar com Google Sheets
+        // Sincronizar (POST)
         async function sincronizarDados() {
             const status = document.getElementById('status');
             status.innerText = "Sincronizando...";
-
             const transaction = db.transaction(["usuarios"], "readonly");
-            const store = transaction.objectStore("usuarios");
-            const dados = await new Promise(resolve => {
-                store.getAll().onsuccess = e => resolve(e.target.result);
-            });
+            const dados = await new Promise(res => transaction.objectStore("usuarios").getAll().onsuccess = e => res(e.target.result));
 
-            if (dados.length === 0) {
-                status.innerText = "Nada para sincronizar.";
-                return;
-            }
+            if (dados.length === 0) return status.innerText = "Nada para sincronizar.";
 
             for (let item of dados) {
-                try {
-                    await fetch(SHEETS_URL, {
-                        method: "POST",
-                        mode: "no-cors", // Necessário para evitar erros de CORS com Apps Script
-                        body: JSON.stringify(item),
-                        headers: { "Content-Type": "application/json" }
-                    });
-                } catch (err) {
-                    console.error("Erro ao enviar:", err);
-                }
+                await fetch(SHEETS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(item) });
             }
 
-            // Limpar banco local após sincronizar (opcional)
-            const clearTx = db.transaction(["usuarios"], "readwrite");
-            clearTx.objectStore("usuarios").clear();
-            status.innerText = "Sincronização concluída!";
+            db.transaction(["usuarios"], "readwrite").objectStore("usuarios").clear();
+            status.innerText = "Sincronizado com sucesso!";
+            buscarDadosDaPlanilha(); // Atualiza a tabela após sincronizar
+        }
+
+        // Buscar dados da Planilha (GET)
+        async function buscarDadosDaPlanilha() {
+            const status = document.getElementById('status');
+            status.innerText = "Buscando dados...";
+            
+            try {
+                const response = await fetch(SHEETS_URL);
+                const dados = await response.json();
+                
+                const tbody = document.querySelector("#tabelaDados tbody");
+                tbody.innerHTML = ""; // Limpa a tabela
+
+                dados.forEach(item => {
+                    const row = `<tr>
+                        <td>${item.nome}</td>
+                        <td>${item.email}</td>
+                        <td>${new Date(item.data).toLocaleString()}</td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+                status.innerText = "Tabela atualizada!";
+            } catch (err) {
+                status.innerText = "Erro ao buscar dados. Verifique se a URL está correta e implantada como 'Qualquer pessoa'.";
+                console.error(err);
+            }
         }
     </script>
 </body>
