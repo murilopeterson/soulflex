@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Offline Form + Sheets</title>
+    <style>
+        body { font-family: sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        input { width: 100%; margin: 10px 0; padding: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; cursor: pointer; margin-top: 10px; }
+        .sync-btn { background-color: #28a745; color: white; border: none; }
+    </style>
+</head>
+<body>
+
+    <h3>Cadastro Offline</h3>
+    <form id="meuForm">
+        <input type="text" id="nome" placeholder="Nome" required>
+        <input type="email" id="email" placeholder="E-mail" required>
+        <button type="submit">Salvar Localmente</button>
+    </form>
+
+    <button class="sync-btn" onclick="sincronizarDados()">Sincronizar com Google Sheets</button>
+    <p id="status"></p>
+
+    <script>
+        const SHEETS_URL = "SUA_URL_DO_APPS_SCRIPT_AQUI";
+        let db;
+
+        // 1. Abrir/Criar IndexedDB
+        const request = indexedDB.open("FormDB", 1);
+        request.onupgradeneeded = e => {
+            db = e.target.result;
+            db.createObjectStore("usuarios", { keyPath: "id", autoIncrement: true });
+        };
+        request.onsuccess = e => db = e.target.result;
+
+        // 2. Salvar dados no IndexedDB
+        document.getElementById('meuForm').onsubmit = e => {
+            e.preventDefault();
+            const novoItem = {
+                nome: document.getElementById('nome').value,
+                email: document.getElementById('email').value
+            };
+
+            const transaction = db.transaction(["usuarios"], "readwrite");
+            transaction.objectStore("usuarios").add(novoItem);
+            
+            transaction.oncomplete = () => {
+                alert("Dados salvos no navegador!");
+                document.getElementById('meuForm').reset();
+            };
+        };
+
+        // 3. Sincronizar com Google Sheets
+        async function sincronizarDados() {
+            const status = document.getElementById('status');
+            status.innerText = "Sincronizando...";
+
+            const transaction = db.transaction(["usuarios"], "readonly");
+            const store = transaction.objectStore("usuarios");
+            const dados = await new Promise(resolve => {
+                store.getAll().onsuccess = e => resolve(e.target.result);
+            });
+
+            if (dados.length === 0) {
+                status.innerText = "Nada para sincronizar.";
+                return;
+            }
+
+            for (let item of dados) {
+                try {
+                    await fetch(SHEETS_URL, {
+                        method: "POST",
+                        mode: "no-cors", // Necessário para evitar erros de CORS com Apps Script
+                        body: JSON.stringify(item),
+                        headers: { "Content-Type": "application/json" }
+                    });
+                } catch (err) {
+                    console.error("Erro ao enviar:", err);
+                }
+            }
+
+            // Limpar banco local após sincronizar (opcional)
+            const clearTx = db.transaction(["usuarios"], "readwrite");
+            clearTx.objectStore("usuarios").clear();
+            status.innerText = "Sincronização concluída!";
+        }
+    </script>
+</body>
+</html>
