@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kyte Clone Full SPA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --primary: #00D1A3;
+            --bg-light: #F8F9FA;
+            --sidebar-bg: #343A40;
+            --text-dark: #212529;
+            --text-muted: #6C757D;
+            --border-color: #E9ECEF;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body { background-color: #f0f2f5; display: flex; height: 100vh; overflow: hidden; }
+
+        /* SIDEBAR */
+        nav {
+            width: 280px;
+            background: var(--sidebar-bg);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header { padding: 20px; border-bottom: 1px solid #495057; }
+        .store-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 10px; cursor: pointer; }
+
+        nav ul { list-style: none; padding: 10px 0; }
+        nav li {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #ADB5BD;
+            transition: 0.2s;
+        }
+        nav li:hover { background: #3E444A; color: white; }
+        nav li.active { background: #3E444A; color: white; border-left: 4px solid var(--primary); }
+
+        /* ÁREA DE CONTEÚDO */
+        main { flex: 1; display: flex; justify-content: center; overflow-y: auto; position: relative; }
+
+        .app-screen {
+            width: 100%;
+            max-width: 480px;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 15px rgba(0,0,0,0.05);
+        }
+
+        /* HEADER PADRÃO DAS VIEWS */
+        .view-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            background: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .view-header h2 { font-size: 1.1rem; flex: 1; text-align: center; font-weight: 600; }
+
+        /* VIEW: DASHBOARD (INÍCIO) */
+        .header-dashboard { background: #343A40; color: white; padding: 40px 20px; text-align: center; }
+        .header-dashboard h1 { font-size: 2.2rem; color: var(--primary); margin: 5px 0; }
+
+        /* ESTILO DOS CARDS EM BRANCO (PLACEHOLDERS) */
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+        .empty-icon { font-size: 50px; margin-bottom: 20px; display: block; filter: grayscale(1); opacity: 0.5; }
+
+        .btn-full {
+            width: 100%; background: var(--primary); color: white; border: none;
+            padding: 16px; border-radius: 8px; font-weight: bold; cursor: pointer;
+            margin-top: 20px;
+        }
+
+        /* UTILITÁRIOS */
+        .hidden { display: none !important; }
+        .p-20 { padding: 20px; }
+
+        @media (max-width: 768px) {
+            nav { display: none; } /* Em um projeto real, aqui teria um menu hambúrguer */
+            .app-screen { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="sidebar-header">
+            <div class="store-name">Minha Loja ></div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.75rem;">Murilo</span>
+                <span style="color: var(--primary); font-size: 0.7rem; font-weight: bold;">ASSINAR</span>
+            </div>
+        </div>
+        <ul id="main-menu">
+            <li class="active" onclick="changeView('inicio', this)"><i data-lucide="home"></i> Início</li>
+            <li onclick="changeView('vender', this)"><i data-lucide="shopping-cart"></i> Vender</li>
+            <li onclick="changeView('pedidos', this)"><i data-lucide="package"></i> Pedidos</li>
+            <li onclick="changeView('produtos', this)"><i data-lucide="box"></i> Produtos</li>
+            <li onclick="changeView('catalogo', this)"><i data-lucide="layout"></i> Catálogo Online</li>
+            <li onclick="changeView('cupons', this)"><i data-lucide="ticket"></i> Cupons</li>
+            <li onclick="changeView('financas', this)"><i data-lucide="wallet"></i> Finanças</li>
+            <li onclick="changeView('clientes', this)"><i data-lucide="users"></i> Clientes</li>
+            <li onclick="changeView('historico', this)"><i data-lucide="history"></i> Histórico</li>
+            <li onclick="changeView('estatisticas', this)"><i data-lucide="bar-chart-3"></i> Estatísticas</li>
+            <li onclick="changeView('config', this)"><i data-lucide="settings"></i> Configurações</li>
+        </ul>
+    </nav>
+
+    <main>
+        <div class="app-screen">
+            
+            <section id="view-inicio" class="content-view">
+                <header class="header-dashboard">
+                    <span style="font-size: 0.7rem; opacity: 0.7;">HOJE</span>
+                    <h1>R$ 0,00</h1>
+                    <span style="font-size: 0.7rem; opacity: 0.7;">em 0 vendas concluídas</span>
+                </header>
+                <div class="p-20">
+                    <div class="empty-state" style="background: white; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <span class="empty-icon">🍕</span>
+                        <h3>Bem-vindo!</h3>
+                        <p>Comece cadastrando seus produtos para realizar sua primeira venda.</p>
+                        <button class="btn-full" onclick="document.querySelector('[data-lucide=box]').parentElement.click()">Ver Produtos</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-vender" class="content-view hidden">
+                <div class="view-header"><h2>Carrinho</h2></div>
+                <div class="empty-state">
+                    <i data-lucide="shopping-basket" style="width: 60px; height: 60px; margin-bottom: 20px;"></i>
+                    <p>Seu carrinho está vazio.</p>
+                    <button class="btn-full">Escolher Produtos</button>
+                </div>
+            </section>
+
+            <section id="view-pedidos" class="content-view hidden">
+                <div class="view-header"><h2>Pedidos</h2></div>
+                <div class="empty-state">
+                    <p>Nenhum pedido realizado hoje.</p>
+                </div>
+            </section>
+
+            <section id="view-produtos" class="content-view hidden">
+                <div class="view-header"><h2>Meus Produtos</h2></div>
+                <div class="p-20">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <span>0 Produtos</span>
+                        <button style="background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold;">+ NOVO</button>
+                    </div>
+                    <div class="empty-state">
+                        <i data-lucide="search" style="margin-bottom: 10px;"></i>
+                        <p>Você ainda não tem produtos cadastrados.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-clientes" class="content-view hidden">
+                <div class="view-header"><h2>Clientes</h2></div>
+                <div class="p-20">
+                    <input type="text" placeholder="Buscar cliente..." style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px;">
+                    <div class="empty-state">
+                        <p>Sua lista de clientes está vazia.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-config" class="content-view hidden">
+                <div class="view-header"><h2>Configurações</h2></div>
+                <div class="p-20">
+                    <div style="padding: 15px 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                        <span>Perfil da Loja</span> <i data-lucide="chevron-right"></i>
+                    </div>
+                    <div style="padding: 15px 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                        <span>Formas de Pagamento</span> <i data-lucide="chevron-right"></i>
+                    </div>
+                    <div style="padding: 15px 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                        <span>Impressão</span> <i data-lucide="chevron-right"></i>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-placeholder" class="content-view hidden">
+                <div class="view-header"><h2>Em breve</h2></div>
+                <div class="empty-state">
+                    <p>Esta tela está sendo implementada.</p>
+                    <button class="btn-full" onclick="changeView('inicio', document.querySelector('nav li'))">Voltar ao Início</button>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script>
+        // Inicializar ícones
+        lucide.createIcons();
+
+        function changeView(viewId, element) {
+            // 1. Esconder todas as views
+            const views = document.querySelectorAll('.content-view');
+            views.forEach(v => v.classList.add('hidden'));
+
+            // 2. Mostrar a view selecionada (ou placeholder se não existir)
+            const targetView = document.getElementById('view-' + viewId);
+            if (targetView) {
+                targetView.classList.remove('hidden');
+            } else {
+                document.getElementById('view-placeholder').classList.remove('hidden');
+            }
+
+            // 3. Atualizar estado do menu lateral
+            const menuItems = document.querySelectorAll('#main-menu li');
+            menuItems.forEach(item => item.classList.remove('active'));
+            if (element) {
+                element.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>

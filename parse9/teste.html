@@ -2,117 +2,120 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Formulário com Tabela</title>
+    <title>Formulário Universal Offline</title>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
-        input { width: 100%; margin: 10px 0; padding: 8px; box-sizing: border-box; }
-        button { padding: 10px; cursor: pointer; margin: 5px 0; width: 100%; }
-        .sync-btn { background-color: #28a745; color: white; border: none; }
-        .get-btn { background-color: #007bff; color: white; border: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        table, th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #f4f4f4; }
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; line-height: 1.6; }
+        .card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 2px 2px 10px #eee; }
+        input, select, textarea { width: 100%; margin: 8px 0; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; margin-right: 5px; }
+        .save-btn { background-color: #007bff; color: white; }
+        .sync-btn { background-color: #28a745; color: white; }
+        .get-btn { background-color: #6c757d; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f8f9fa; }
     </style>
 </head>
 <body>
 
-    <h3>Cadastro Offline (IndexedDB)</h3>
-    <form id="meuForm">
-        <input type="text" id="nome" placeholder="Nome" required>
-        <input type="email" id="email" placeholder="E-mail" required>
-        <button type="submit">Salvar Localmente</button>
-    </form>
+    <div class="card">
+        <h3>Formulário Dinâmico</h3>
+        <form id="meuForm">
+            <input type="text" id="projeto" placeholder="Nome do Projeto" required>
+            <input type="number" id="valor" placeholder="Valor Estimado">
+            <textarea id="descricao" placeholder="Descrição do item"></textarea>
+            <button type="submit" class="save-btn">Salvar Local (IndexedDB)</button>
+        </form>
+    </div>
 
-    <hr>
+    <div class="actions">
+        <button class="sync-btn" onclick="sincronizar()">Sincronizar com Nuvem</button>
+        <button class="get-btn" onclick="baixarDados()">Visualizar Planilha</button>
+    </div>
 
-    <button class="sync-btn" onclick="sincronizarDados()">Sincronizar Dados Locais -> Planilha</button>
-    <button class="get-btn" onclick="buscarDadosDaPlanilha()">Carregar Dados da Planilha</button>
-    
     <p id="status"></p>
 
-    <div id="tabelaContainer">
-        <h4>Dados na Planilha:</h4>
+    <div id="tabelaContainer" style="overflow-x:auto;">
         <table id="tabelaDados">
-            <thead>
-                <tr>
-                    <th>Nome</th>
-                    <th>E-mail</th>
-                    <th>Data</th>
-                </tr>
-            </thead>
-            <tbody>
-                </tbody>
+            <thead><tr id="headerRow"></tr></thead>
+            <tbody></tbody>
         </table>
     </div>
 
     <script>
-        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbx_sW5Sl_i6pDyQFy2Tt0EOJP7kqOoyq2qsTSqBCYIKgo3p9uvI0YWZoWYxwO2WURke/exec"; 
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzKsNdozd1k2ich7bDbMilA4rdlqRM3Kvsi4ntxEAeeG8xeZBta6dOlkAMjUOx00uE4/exec"; 
         let db;
 
-        // Configuração do IndexedDB
-        const request = indexedDB.open("FormDB", 1);
+        // Banco de Dados Universal
+        const request = indexedDB.open("UniversalDB", 1);
         request.onupgradeneeded = e => {
-            db = e.target.result;
-            db.createObjectStore("usuarios", { keyPath: "id", autoIncrement: true });
+            e.target.result.createObjectStore("store", { keyPath: "id", autoIncrement: true });
         };
         request.onsuccess = e => db = e.target.result;
 
-        // Salvar no IndexedDB
+        // CAPTURA DINÂMICA: Transforma qualquer formulário em JSON
         document.getElementById('meuForm').onsubmit = e => {
             e.preventDefault();
-            const transaction = db.transaction(["usuarios"], "readwrite");
-            transaction.objectStore("usuarios").add({
-                nome: document.getElementById('nome').value,
-                email: document.getElementById('email').value
+            const formData = {};
+            const elements = e.target.querySelectorAll("input, textarea, select");
+            
+            elements.forEach(el => {
+                formData[el.id] = el.value;
             });
-            transaction.oncomplete = () => {
-                alert("Salvo offline!");
-                document.getElementById('meuForm').reset();
+
+            const tx = db.transaction("store", "readwrite");
+            tx.objectStore("store").add(formData);
+            tx.oncomplete = () => {
+                alert("Dados guardados no navegador!");
+                e.target.reset();
             };
         };
 
-        // Sincronizar (POST)
-        async function sincronizarDados() {
+        // Sincronização em Lote
+        async function sincronizar() {
             const status = document.getElementById('status');
             status.innerText = "Sincronizando...";
-            const transaction = db.transaction(["usuarios"], "readonly");
-            const dados = await new Promise(res => transaction.objectStore("usuarios").getAll().onsuccess = e => res(e.target.result));
+            
+            const tx = db.transaction("store", "readonly");
+            const dados = await new Promise(res => tx.objectStore("store").getAll().onsuccess = e => res(e.target.result));
 
-            if (dados.length === 0) return status.innerText = "Nada para sincronizar.";
+            if (dados.length === 0) return status.innerText = "Nada pendente.";
 
             for (let item of dados) {
-                await fetch(SHEETS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(item) });
+                // Remove o ID do IndexedDB antes de enviar para a planilha não ficar poluída
+                const { id, ...dadosParaEnviar } = item; 
+                await fetch(SHEETS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(dadosParaEnviar) });
             }
 
-            db.transaction(["usuarios"], "readwrite").objectStore("usuarios").clear();
-            status.innerText = "Sincronizado com sucesso!";
-            buscarDadosDaPlanilha(); // Atualiza a tabela após sincronizar
+            db.transaction("store", "readwrite").objectStore("store").clear();
+            status.innerText = "Sincronização concluída!";
+            baixarDados();
         }
 
-        // Buscar dados da Planilha (GET)
-        async function buscarDadosDaPlanilha() {
-            const status = document.getElementById('status');
-            status.innerText = "Buscando dados...";
-            
+        // Gera Tabela Automaticamente baseada no que vier da Planilha
+        async function baixarDados() {
+            document.getElementById('status').innerText = "Baixando...";
             try {
-                const response = await fetch(SHEETS_URL);
-                const dados = await response.json();
+                const res = await fetch(SHEETS_URL);
+                const rows = await res.json();
                 
+                const thead = document.getElementById('headerRow');
                 const tbody = document.querySelector("#tabelaDados tbody");
-                tbody.innerHTML = ""; // Limpa a tabela
+                thead.innerHTML = ""; tbody.innerHTML = "";
 
-                dados.forEach(item => {
-                    const row = `<tr>
-                        <td>${item.nome}</td>
-                        <td>${item.email}</td>
-                        <td>${new Date(item.data).toLocaleString()}</td>
-                    </tr>`;
-                    tbody.innerHTML += row;
+                rows.forEach((row, index) => {
+                    const tr = document.createElement('tr');
+                    row.forEach(cell => {
+                        const el = document.createElement(index === 0 ? 'th' : 'td');
+                        el.innerText = cell;
+                        tr.appendChild(el);
+                    });
+                    if (index === 0) thead.appendChild(tr);
+                    else tbody.appendChild(tr);
                 });
-                status.innerText = "Tabela atualizada!";
-            } catch (err) {
-                status.innerText = "Erro ao buscar dados. Verifique se a URL está correta e implantada como 'Qualquer pessoa'.";
-                console.error(err);
+                document.getElementById('status').innerText = "Dados atualizados.";
+            } catch (e) {
+                document.getElementById('status').innerText = "Erro ao carregar dados.";
             }
         }
     </script>
