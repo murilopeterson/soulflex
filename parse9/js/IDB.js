@@ -107,7 +107,7 @@ export default class IDB {
 
 (async () => {
     const novoCliente = {
-        nome: "Murilo Peterson",
+        nome: "Murilo P",
         email: "murilo@example.com",
         cidade: "São Paulo"
     };

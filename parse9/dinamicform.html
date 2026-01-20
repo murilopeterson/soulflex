@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Order System</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --primary: #8b5cf6;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --text: #f8fafc;
+            --border: #334155;
+        }
+
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            font-family: 'Inter', system-ui, sans-serif; 
+            margin: 0;
+            padding-top: 80px;
+        }
+
+        /* Sticky Header */
+        .header-bar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            box-sizing: border-box;
+        }
+
+        .total-badge {
+            background: var(--secondary);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        .container { max-width: 800px; margin: auto; padding: 20px; }
+
+        /* Accordion Style */
+        .product-item {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .item-header {
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.03);
+        }
+
+        .item-header:hover { background: rgba(255,255,255,0.06); }
+
+        .item-title { font-weight: 600; display: flex; gap: 10px; align-items: center; }
+        
+        .item-summary { font-size: 0.85rem; color: #94a3b8; }
+
+        .item-content { 
+            padding: 20px; 
+            border-top: 1px solid var(--border);
+            display: none; 
+        }
+
+        .item-content.active { display: block; }
+
+        /* Form Elements */
+        fieldset { border: none; padding: 0; margin-bottom: 20px; }
+        legend { font-size: 0.9rem; font-weight: bold; color: var(--primary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .radio-option {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        .radio-option:has(input:checked) {
+            border-color: var(--primary);
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--primary);
+        }
+
+        .radio-option input { display: none; }
+
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; }
+        
+        input, textarea {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn-add {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .btn-remove {
+            background: none;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <div>
+            <h2 style="margin:0; font-size: 1.2rem;">New Purchase Order</h2>
+            <span id="items-count" style="font-size: 0.8rem; color: #94a3b8;">0 Items</span>
+        </div>
+        <div class="total-badge" id="grand-total">$ 0.00</div>
+    </div>
+
+    <div class="container">
+        <button type="button" class="btn-add" onclick="addProduct()">+ Add Product</button>
+        <form id="orderForm">
+            <div id="productsList"></div>
+            <button type="submit" class="btn-add" style="width: 100%; margin-top: 30px; background: var(--secondary); color: #000;">Complete Order</button>
+        </form>
+    </div>
+
+    <script>
+        const productConfig = {
+            "apparel": {
+                "models": {
+                    "t-shirt": { "price": 25, "sizes": {"S": 0, "M": 0, "L": 2}, "acc": {"Pocket": 5} },
+                    "jacket": { "price": 60, "sizes": {"M": 0, "L": 5, "XL": 10}, "acc": {"Hood": 12} }
+                },
+                "coats": { "matte": {"Black": 0}, "glossy": {"Neon": 15} }
+            },
+            "equipment": {
+                "models": {
+                    "helmet": { "price": 120, "sizes": {"M": 0, "L": 10}, "acc": {"Visor": 20} }
+                },
+                "coats": { "carbon": {"Black": 0}, "glossy": {"Red": 10} }
+            }
+        };
+
+        let productCount = 0;
+
+        function addProduct() {
+            productCount++;
+            const id = productCount;
+            const item = document.createElement('div');
+            item.className = 'product-item';
+            item.id = `item-${id}`;
+            item.innerHTML = `
+                <div class="item-header" onclick="toggleAccordion(${id})">
+                    <div class="item-title">
+                        <span id="label-id-${id}">#${id}</span>
+                        <span class="item-summary" id="summary-${id}">New Product...</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <span id="header-price-${id}" style="font-weight:bold; color:var(--secondary);">$ 0.00</span>
+                        <button type="button" class="btn-remove" onclick="removeProduct(event, ${id})">Remove</button>
+                    </div>
+                </div>
+                <div class="item-content active" id="content-${id}">
+                    <fieldset><legend>Type</legend><div class="radio-group" id="type-group-${id}"></div></fieldset>
+                    <div id="extra-fields-${id}">
+                        <fieldset><legend>Model</legend><div class="radio-group" id="model-group-${id}"></div></fieldset>
+                        <fieldset><legend>Size</legend><div class="radio-group" id="size-group-${id}"></div></fieldset>
+                        <fieldset><legend>Coating & Color</legend>
+                            <div class="radio-group" id="coat-group-${id}"></div>
+                            <div class="radio-group" style="margin-top:10px" id="color-group-${id}"></div>
+                        </fieldset>
+                    </div>
+                    <div class="grid-inputs">
+                        <div><label>Qty</label><input type="number" id="qty-${id}" value="1" min="1" oninput="calculate()"></div>
+                        <div><label>Disc %</label><input type="number" id="disc-${id}" value="0" oninput="calculate()"></div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('productsList').appendChild(item);
+            
+            // Colapsar outros ao adicionar um novo
+            document.querySelectorAll('.item-content').forEach((el, idx) => {
+                if(idx !== document.querySelectorAll('.item-content').length - 1) el.classList.remove('active');
+            });
+
+            renderRadios(`type-group-${id}`, Object.keys(productConfig), `type-${id}`, (v) => onTypeChange(id, v));
+            updateItemsCount();
+        }
+
+        function renderRadios(containerId, options, name, onChange) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            options.forEach(opt => {
+                const label = document.createElement('label');
+                label.className = 'radio-option';
+                label.innerHTML = `<input type="radio" name="${name}" value="${opt}" required> ${opt.toUpperCase()}`;
+                label.querySelector('input').onchange = () => { onChange(opt); calculate(); };
+                container.appendChild(label);
+            });
+        }
+
+        function onTypeChange(id, type) {
+            renderRadios(`model-group-${id}`, Object.keys(productConfig[type].models), `model-${id}`, (v) => {
+                const data = productConfig[type].models[v];
+                renderRadios(`size-group-${id}`, Object.keys(data.sizes), `size-${id}`, () => {});
+            });
+            renderRadios(`coat-group-${id}`, Object.keys(productConfig[type].coats), `coat-${id}`, (v) => {
+                renderRadios(`color-group-${id}`, Object.keys(productConfig[type].coats[v]), `color-${id}`, () => {});
+            });
+        }
+
+        function toggleAccordion(id) {
+            const content = document.getElementById(`content-${id}`);
+            const isActive = content.classList.contains('active');
+            document.querySelectorAll('.item-content').forEach(el => el.classList.remove('active'));
+            if (!isActive) content.classList.add('active');
+        }
+
+        function calculate() {
+            let total = 0;
+            document.querySelectorAll('.product-item').forEach(item => {
+                const id = item.id.split('-')[1];
+                const type = document.querySelector(`input[name="type-${id}"]:checked`)?.value;
+                const model = document.querySelector(`input[name="model-${id}"]:checked`)?.value;
+                const size = document.querySelector(`input[name="size-${id}"]:checked`)?.value;
+                const coat = document.querySelector(`input[name="coat-${id}"]:checked`)?.value;
+                const color = document.querySelector(`input[name="color-${id}"]:checked`)?.value;
+
+                if (type && model) {
+                    let p = productConfig[type].models[model].price;
+                    if (size) p += productConfig[type].models[model].sizes[size];
+                    if (coat && color) p += productConfig[type].coats[coat][color];
+
+                    const qty = document.getElementById(`qty-${id}`).value;
+                    const disc = document.getElementById(`disc-${id}`).value;
+                    const sub = (p * qty) * (1 - disc/100);
+                    
+                    document.getElementById(`header-price-${id}`).innerText = `$ ${sub.toFixed(2)}`;
+                    document.getElementById(`summary-${id}`).innerText = `${model.toUpperCase()} - ${size || ''}`;
+                    total += sub;
+                }
+            });
+            document.getElementById('grand-total').innerText = `$ ${total.toFixed(2)}`;
+        }
+
+        function removeProduct(e, id) {
+            e.stopPropagation();
+            document.getElementById(`item-${id}`).remove();
+            calculate();
+            updateItemsCount();
+        }
+
+        function updateItemsCount() {
+            const count = document.querySelectorAll('.product-item').length;
+            document.getElementById('items-count').innerText = `${count} Items`;
+        }
+
+        addProduct();
+    </script>
+</body>
+</html>

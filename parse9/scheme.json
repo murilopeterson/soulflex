@@ -1,0 +1,18 @@
+{
+    "types":{
+        "box":{
+            "sizes":[],
+            "models":["soul", "gran", "gold"],
+            "variations":[]
+        },
+        "antiderrapante":{
+            "sizes":[],
+            "models":["gran", "gold", "prime", "luxo", "diamante"],
+            "variations":[]
+        },
+        "bau":{},
+        "bicama":{},
+        "tatame":{}
+        
+    }
+}

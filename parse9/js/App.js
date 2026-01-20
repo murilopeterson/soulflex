@@ -2,7 +2,7 @@ import XLS from "./XLS.js";
 import IDB from "./IDB.js";
 import Util from "./Util.js";
 import StringRegistry from "./REG.js"
-import Database from "./Database.js"
+import Storage from "./Storage.js"
 
 class Reader{
     constructor(input, callback){
@@ -30,7 +30,7 @@ class App{
 
     constructor(){
 
-        //CHECK DATABASE
+        //CHECK Storage
         //UPDATE ORDERLIST
         this.render()
 
@@ -39,7 +39,7 @@ class App{
     }
 
     render(){
-        const data = new Database("orders").readAll()
+        const data = new Storage("orders").readAll()
         this.genDetailsList(data[1], "draggable-list")
     }
 
@@ -76,9 +76,9 @@ class App{
                         route:  ""
                     }
 
-                    client       = new Database("clients").upsert(client, "name");
-                    const seller = new Database("sellers").upsert(order.seller);
-                    const info   = obs ? new Database("observations").update(current,obs) : ''
+                    client       = new Storage("clients").upsert(client, "name");
+                    const seller = new Storage("sellers").upsert(order.seller);
+                    const info   = obs ? new Storage("observations").update(current,obs) : ''
 
                     obj[current]   = {
                         client,
@@ -100,11 +100,11 @@ class App{
                     if( row.length === 5 && Number.isInteger(row[0])){
                         const itemParsed = this.itemParse(row)
 
-                        //const type      = new Database("types").upsert(itemParsed.type)
-                        const model     = new Database("models").upsert(itemParsed.type+" "+itemParsed.model)
-                        const coat      = new Database("coats").upsert(itemParsed.coat)
-                        //const color      = new Database("coats").upsert(itemParsed.color)
-                        const size      = new Database("sizes").upsert(itemParsed.size)
+                        //const type      = new Storage("types").upsert(itemParsed.type)
+                        const model     = new Storage("models").upsert(itemParsed.type+" "+itemParsed.model)
+                        const coat      = new Storage("coats").upsert(itemParsed.coat)
+                        //const color      = new Storage("coats").upsert(itemParsed.color)
+                        const size      = new Storage("sizes").upsert(itemParsed.size)
 
                         
                         const register   =
@@ -124,7 +124,7 @@ class App{
                         }
 
                         total.push(register)
-                        const product  = new Database("products").upsert(register)
+                        const product  = new Storage("products").upsert(register)
 
                         obj[current].deadline = this.checkSpecials(obj[current].sale_date,row[1])
                         obj[current].items[register] = description
@@ -144,7 +144,7 @@ class App{
                 }
 
             })
-            new Database("orders").create(obj)
+            new Storage("orders").create(obj)
             
         }
 
@@ -326,7 +326,7 @@ class App{
             const dateDisplay = obj.sale_date ? obj.sale_date.replace(/\/20(\d{2})$/, "/$1") : "";
 
             summary.innerHTML = `
-                <span><b>${id} ${ new Database("clients").read(obj.client).name || ''}</b> - ${new Database("observations").read(obj.obs) || ''}</span>
+                <span><b>${id} ${ new Storage("clients").read(obj.client).name || ''}</b> - ${new Storage("observations").read(obj.obs) || ''}</span>
                 <em>${dateDisplay}</em>
             `;
 
