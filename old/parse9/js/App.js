@@ -35,12 +35,12 @@ class App{
         this.render()
 
         this.file = new Reader("file", this.onFileChange.bind(this))
-        this.onFileChange()
+        //this.onFileChange()
     }
 
     render(){
         const data = new Storage("orders").readAll()
-        this.genDetailsList(data[1], "draggable-list")
+        this.genDetailsList(data, "draggable-list")
     }
 
     onFileChange(data) {
