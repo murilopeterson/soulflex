@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logística de Carga - Fábrica</title>
+    <style>
+        :root {
+            --glass-bg: rgba(30, 30, 30, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --accent: #00d2ff;
+            --danger: #ff4757;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: #121212;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px;
+            width: 100%;
+            max-width: 900px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        h2 { font-weight: 300; letter-spacing: 1px; color: var(--accent); margin-top: 0; }
+
+        .section {
+            background: rgba(255,255,255,0.03);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .input-group { display: flex; flex-direction: column; }
+        label { font-size: 0.85rem; color: #aaa; margin-bottom: 5px; }
+
+        input {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #000;
+            color: #fff;
+            outline: none;
+        }
+
+        input:focus { border-color: var(--accent); }
+
+        .btn-add {
+            grid-column: 1 / -1;
+            padding: 12px;
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .progress-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            height: 30px;
+            background: #222;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        #fill-level {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            transition: width 0.4s ease;
+        }
+
+        .item-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .item-table th { text-align: left; color: #777; font-size: 0.8rem; padding: 10px; }
+        .item-table td { padding: 8px; border-bottom: 1px solid #222; }
+
+        .btn-remove {
+            background: none;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-remove:hover { background: var(--danger); color: white; }
+
+        .edit-input { width: 60px; padding: 5px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Dimensões do Baú (cm)</h2>
+    <div class="section grid-inputs">
+        <div class="input-group">
+            <label>Comp. (cm)</label>
+            <input type="number" id="truck-l" value="600" oninput="updateUI()">
+        </div>
+        <div class="input-group">
+            <label>Larg. (cm)</label>
+            <input type="number" id="truck-w" value="240" oninput="updateUI()">
+        </div>
+        <div class="input-group">
+            <label>Alt. (cm)</label>
+            <input type="number" id="truck-h" value="250" oninput="updateUI()">
+        </div>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div id="fill-level"></div>
+        </div>
+        <p id="stats" style="font-weight: bold; margin-top: 10px;">Ocupação: 0%</p>
+    </div>
+
+    <div class="section">
+        <h3 style="margin-top:0">Novo Item</h3>
+        <div class="grid-inputs">
+            <input type="number" id="in-q" placeholder="Qtd" value="1">
+            <input type="number" id="in-l" placeholder="Comp (cm)">
+            <input type="number" id="in-w" placeholder="Larg (cm)">
+            <input type="number" id="in-h" placeholder="Alt (cm)">
+            <button class="btn-add" onclick="addItem()">Adicionar à Lista</button>
+        </div>
+    </div>
+
+    <table class="item-table">
+        <thead>
+            <tr>
+                <th>Qtd</th>
+                <th>Comp</th>
+                <th>Larg</th>
+                <th>Alt</th>
+                <th>Volume Total</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody id="item-list-body"></tbody>
+    </table>
+</div>
+
+<script>
+    let items = [];
+
+    function updateUI() {
+        const tL = parseFloat(document.getElementById('truck-l').value) || 0;
+        const tW = parseFloat(document.getElementById('truck-w').value) || 0;
+        const tH = parseFloat(document.getElementById('truck-h').value) || 0;
+        
+        const truckVolCm3 = tL * tW * tH;
+        let usedVolCm3 = 0;
+
+        const tbody = document.getElementById('item-list-body');
+        tbody.innerHTML = '';
+
+        items.forEach((item, index) => {
+            const itemVol = (item.q * item.l * item.w * item.h);
+            usedVolCm3 += itemVol;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td><input type="number" class="edit-input" value="${item.q}" oninput="editItem(${index}, 'q', this.value)"></td>
+                    <td><input type="number" class="edit-input" value="${item.l}" oninput="editItem(${index}, 'l', this.value)"></td>
+                    <td><input type="number" class="edit-input" value="${item.w}" oninput="editItem(${index}, 'w', this.value)"></td>
+                    <td><input type="number" class="edit-input" value="${item.h}" oninput="editItem(${index}, 'h', this.value)"></td>
+                    <td style="color:#00d2ff">${(itemVol/1000000).toFixed(3)} m³</td>
+                    <td><button class="btn-remove" onclick="removeItem(${index})">remover</button></td>
+                </tr>
+            `;
+        });
+
+        const percent = truckVolCm3 > 0 ? (usedVolCm3 / truckVolCm3) * 100 : 0;
+        const fillBar = document.getElementById('fill-level');
+        
+        fillBar.style.width = Math.min(percent, 100) + '%';
+        fillBar.style.background = percent > 100 ? '#ff4757' : 'linear-gradient(90deg, #00d2ff, #3a7bd5)';
+
+        const usedM3 = (usedVolCm3 / 1000000).toFixed(2);
+        const truckM3 = (truckVolCm3 / 1000000).toFixed(2);
+
+        document.getElementById('stats').innerHTML = 
+            `Ocupado: ${usedM3}m³ / Total: ${truckM3}m³ <br> <span style="font-size: 1.2rem; color: ${percent > 100 ? '#ff4757' : '#00d2ff'}">${percent.toFixed(1)}% preenchido</span>`;
+    }
+
+    function addItem() {
+        const newItem = {
+            q: parseInt(document.getElementById('in-q').value) || 1,
+            l: parseFloat(document.getElementById('in-l').value) || 0,
+            w: parseFloat(document.getElementById('in-w').value) || 0,
+            h: parseFloat(document.getElementById('in-h').value) || 0
+        };
+
+        if(newItem.l > 0 && newItem.w > 0) {
+            items.push(newItem);
+            updateUI();
+            // Limpa campos de entrada
+            document.getElementById('in-l').value = '';
+            document.getElementById('in-w').value = '';
+            document.getElementById('in-h').value = '';
+        }
+    }
+
+    function editItem(index, field, value) {
+        items[index][field] = parseFloat(value) || 0;
+        updateUI();
+    }
+
+    function removeItem(index) {
+        items.splice(index, 1);
+        updateUI();
+    }
+
+    // Inicializa
+    updateUI();
+</script>
+
+</body>
+</html>
